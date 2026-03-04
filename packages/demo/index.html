@@ -31,8 +31,11 @@
   <label for="ipfs">IPFS Gateway URL</label>
   <input id="ipfs" value="http://localhost:8080" />
 
-  <label for="userAddr">User Address (public input)</label>
-  <input id="userAddr" placeholder="0x..." />
+  <label for="userAddr">User Address (public input — must match wallet)</label>
+  <div style="display: flex; gap: 0.5rem; align-items: center;">
+    <input id="userAddr" placeholder="0x..." style="flex:1" readonly />
+    <button id="connectWallet" style="margin:0; white-space:nowrap;">Connect Wallet</button>
+  </div>
 
   <button id="generate">Generate Proof</button>
   <div id="status"></div>

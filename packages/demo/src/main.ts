@@ -27,6 +27,7 @@ const $copyProof = document.getElementById("copyProof") as HTMLButtonElement;
 const $copyInputs = document.getElementById("copyInputs") as HTMLButtonElement;
 const $verify = document.getElementById("verify") as HTMLButtonElement;
 const $verifyStatus = document.getElementById("verifyStatus")!;
+const $connectWallet = document.getElementById("connectWallet") as HTMLButtonElement;
 
 // ── WASM init ────────────────────────────────────────────────────────
 let wasmReady = false;
@@ -47,6 +48,23 @@ $copyProof.addEventListener("click", () => {
 });
 $copyInputs.addEventListener("click", () => {
   navigator.clipboard.writeText($publicInputs.value);
+});
+
+// ── Connect wallet ──────────────────────────────────────────────────
+$connectWallet.addEventListener("click", async () => {
+  if (!window.ethereum) {
+    setStatus("No wallet found. Install MetaMask or another browser wallet.");
+    return;
+  }
+  try {
+    const accounts = (await window.ethereum.request({
+      method: "eth_requestAccounts",
+    })) as `0x${string}`[];
+    $userAddr.value = accounts[0];
+    $connectWallet.textContent = "Connected";
+  } catch (err) {
+    setStatus(`Wallet connection failed: ${err instanceof Error ? err.message : err}`);
+  }
 });
 
 // ── State ────────────────────────────────────────────────────────────
@@ -86,9 +104,17 @@ $btn.addEventListener("click", async () => {
     // Build inputs from circuit ABI
     const inputs: Record<string, string> = {};
     const userAddr = $userAddr.value.trim();
+    if (!userAddr) {
+      setStatus("Connect your wallet first — your address is used as a public input.");
+      return;
+    }
     for (const param of circuit.abi.parameters) {
-      if (userAddr && param.name === "address") {
+      if (param.name === "address") {
+        // address is a public input verified against msg.sender on-chain
         inputs[param.name] = userAddr;
+      } else if (param.name === "root") {
+        // merkle root comes from the contract
+        inputs[param.name] = definition.merkleRoot;
       } else {
         const val = prompt(
           `Enter value for "${param.name}" (${param.visibility}, ${param.type.kind}):`,
@@ -134,6 +160,13 @@ $verify.addEventListener("click", async () => {
     const accounts = (await window.ethereum.request({
       method: "eth_requestAccounts",
     })) as `0x${string}`[];
+
+    // The contract verifies against msg.sender, so the wallet must match the proof address
+    const proofAddr = $userAddr.value.trim().toLowerCase();
+    if (accounts[0].toLowerCase() !== proofAddr) {
+      $verifyStatus.textContent = `Wallet mismatch: proof was generated for ${proofAddr}, but wallet is ${accounts[0]}. The contract will reject this.`;
+      return;
+    }
 
     const walletClient = createWalletClient({
       account: accounts[0],
