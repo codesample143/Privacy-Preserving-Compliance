@@ -20,7 +20,6 @@ pub struct PublishData {
     pub vk_path: String,
     pub verifier_path: String,
     pub cid: String,
-    pub file_name: String,
     pub ipfs_size: String,
     pub merkle_root: String,
     pub verifier_address: String,
@@ -81,14 +80,16 @@ pub async fn run(
     bb::write_solidity_verifier(&vk_path, &verifier_path)?;
     eprintln!("Solidity verifier generated");
 
-    // 5. Upload circuit source to IPFS
-    eprintln!("uploading circuit to IPFS...");
-    let response = ipfs::add_file(ipfs_rpc_url, &source_file)
-        .await
-        .with_context(|| format!(
-            "failed to upload {} to IPFS at {ipfs_rpc_url}",
-            source_file.display()
-        ))?;
+    // 5. Upload circuit source and compiled output to IPFS
+    eprintln!("uploading circuit files to IPFS...");
+    let response = ipfs::add_directory(
+        ipfs_rpc_url,
+        &[source_file.as_path(), bytecode_path.as_path()],
+    )
+    .await
+    .with_context(|| {
+        format!("failed to upload circuit files to IPFS at {ipfs_rpc_url}")
+    })?;
     eprintln!("uploaded to IPFS");
 
     // 6. Temporarily copy Verifier.sol into the Foundry project so forge can compile it
@@ -175,7 +176,6 @@ pub async fn run(
         vk_path: vk_path.display().to_string(),
         verifier_path: verifier_path.display().to_string(),
         cid: cid.to_string(),
-        file_name: response.name,
         ipfs_size: response.size,
         merkle_root: merkle_root.to_string(),
         verifier_address: deploy_result.deployed_to.to_string(),

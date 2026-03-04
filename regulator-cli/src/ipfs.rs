@@ -11,22 +11,32 @@ pub struct AddResponse {
     pub size: String,
 }
 
-// Upload a file to IPFS
-pub async fn add_file(ipfs_rpc_url: &str, file_path: &Path) -> Result<AddResponse> {
-    let file_name = file_path
-        .file_name()
-        .context("file path has no file name")?
-        .to_string_lossy()
-        .to_string();
+/// Upload multiple files to IPFS wrapped in a directory.
+///
+/// Returns the `AddResponse` for the wrapping directory (whose CID covers all
+/// the files).  The individual file responses are discarded.
+pub async fn add_directory(ipfs_rpc_url: &str, files: &[&Path]) -> Result<AddResponse> {
+    let mut form = multipart::Form::new();
 
-    let file_bytes = tokio::fs::read(file_path)
-        .await
-        .with_context(|| format!("failed to read file: {}", file_path.display()))?;
+    for file_path in files {
+        let file_name = file_path
+            .file_name()
+            .context("file path has no file name")?
+            .to_string_lossy()
+            .to_string();
 
-    let part = multipart::Part::bytes(file_bytes).file_name(file_name);
-    let form = multipart::Form::new().part("file", part);
+        let file_bytes = tokio::fs::read(file_path)
+            .await
+            .with_context(|| format!("failed to read file: {}", file_path.display()))?;
 
-    let url = format!("{}/api/v0/add", ipfs_rpc_url.trim_end_matches('/'));
+        let part = multipart::Part::bytes(file_bytes).file_name(file_name);
+        form = form.part("file", part);
+    }
+
+    let url = format!(
+        "{}/api/v0/add?wrap-with-directory=true",
+        ipfs_rpc_url.trim_end_matches('/')
+    );
 
     let client = reqwest::Client::new();
     let response = client
@@ -34,27 +44,29 @@ pub async fn add_file(ipfs_rpc_url: &str, file_path: &Path) -> Result<AddRespons
         .multipart(form)
         .send()
         .await
-        .with_context(|| format!(
-            "failed to upload {} to IPFS at {url} -- is the IPFS daemon running?",
-            file_path.display()
-        ))?;
+        .with_context(|| format!("failed to upload files to IPFS at {url}"))?;
 
     let status = response.status();
     if !status.is_success() {
         let body = response.text().await.unwrap_or_default();
-        anyhow::bail!(
-            "IPFS add failed for {} (HTTP {status} from {url}): {body}",
-            file_path.display()
-        );
+        anyhow::bail!("IPFS add failed (HTTP {status} from {url}): {body}");
     }
 
-    let add_response: AddResponse = response
-        .json()
+    // The response is newline-delimited JSON: one object per file, then one
+    // for the wrapping directory (Name == "").
+    let body = response
+        .text()
         .await
-        .with_context(|| format!(
-            "failed to parse IPFS add response from {url} for {}",
-            file_path.display()
-        ))?;
+        .context("failed to read IPFS add response body")?;
 
-    Ok(add_response)
+    let mut dir_entry: Option<AddResponse> = None;
+    for line in body.lines() {
+        let entry: AddResponse =
+            serde_json::from_str(line).with_context(|| format!("bad IPFS JSON line: {line}"))?;
+        if entry.name.is_empty() {
+            dir_entry = Some(entry);
+        }
+    }
+
+    dir_entry.context("IPFS response did not include a directory wrapper entry")
 }

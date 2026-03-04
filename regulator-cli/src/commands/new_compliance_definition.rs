@@ -118,15 +118,15 @@ pub async fn run(
 
     // ── IPFS Upload ──────────────────────────────────────────────────
     eprintln!("\nIPFS Upload");
-    eprintln!("  Uploading {}...", source_file.display());
-    let ipfs_response = ipfs::add_file(ipfs_rpc_url, &source_file)
-        .await
-        .with_context(|| {
-            format!(
-                "failed to upload {} to IPFS at {ipfs_rpc_url}",
-                source_file.display()
-            )
-        })?;
+    eprintln!("  Uploading {} and compiled output...", source_file.display());
+    let ipfs_response = ipfs::add_directory(
+        ipfs_rpc_url,
+        &[source_file.as_path(), bytecode_path.as_path()],
+    )
+    .await
+    .with_context(|| {
+        format!("failed to upload circuit files to IPFS at {ipfs_rpc_url}")
+    })?;
     eprintln!("  CID: {}", ipfs_response.hash);
 
     // ── HonkVerifier Contract ────────────────────────────────────────
