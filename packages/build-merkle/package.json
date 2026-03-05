@@ -1,0 +1,14 @@
+{
+  "name": "@ppc/build-merkle",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "build-merkle": "./index.ts"
+  },
+  "dependencies": {
+    "@zkpassport/poseidon2": "^0.6.2"
+  },
+  "devDependencies": {
+    "tsx": "^4.0.0"
+  }
+}

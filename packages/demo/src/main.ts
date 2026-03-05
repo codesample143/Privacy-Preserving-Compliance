@@ -102,7 +102,7 @@ $btn.addEventListener("click", async () => {
     const circuit = await pm.fetchCircuit(definition.metadataHash);
 
     // Build inputs from circuit ABI
-    const inputs: Record<string, string> = {};
+    const inputs: Record<string, string | string[]> = {};
     const userAddr = $userAddr.value.trim();
     if (!userAddr) {
       setStatus("Connect your wallet first — your address is used as a public input.");
@@ -132,7 +132,7 @@ $btn.addEventListener("click", async () => {
       } else if (param.name === "index" && merkleProof) {
         inputs[param.name] = merkleProof.index;
       } else if (param.name === "hash_path" && merkleProof) {
-        inputs[param.name] = JSON.stringify(merkleProof.hashPath);
+        inputs[param.name] = merkleProof.hashPath;
       } else {
         const val = prompt(
           `Enter value for "${param.name}" (${param.visibility}, ${param.type.kind}):`,

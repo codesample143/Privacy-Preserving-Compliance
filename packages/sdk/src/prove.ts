@@ -1,5 +1,6 @@
 import { Noir, type CompiledCircuit } from "@noir-lang/noir_js";
 import { Barretenberg, UltraHonkBackend } from "@aztec/bb.js";
+import type { InputMap } from "@noir-lang/noirc_abi";
 import type { ProofResult } from "./types";
 
 function toHex(bytes: Uint8Array): `0x${string}` {
@@ -10,7 +11,7 @@ function toHex(bytes: Uint8Array): `0x${string}` {
 
 export async function generateProof(
   circuit: CompiledCircuit,
-  inputs: Record<string, string>,
+  inputs: InputMap,
 ): Promise<ProofResult> {
   const api = await Barretenberg.new();
   try {

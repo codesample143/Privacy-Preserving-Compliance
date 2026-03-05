@@ -3,6 +3,7 @@ import { getActiveVersion } from "./chain";
 import { fetchCircuit, fetchLeaves } from "./ipfs";
 import { computeMerkleProofForLeaf, type MerkleProof } from "./merkle";
 import { generateProof } from "./prove";
+import type { InputMap } from "@noir-lang/noirc_abi";
 import type {
   ProofManagerConfig,
   ComplianceVersion,
@@ -28,7 +29,7 @@ export class ProofManager {
 
   async prove(
     circuit: CompiledCircuit,
-    inputs: Record<string, string>,
+    inputs: InputMap,
   ): Promise<ProofResult> {
     return generateProof(circuit, inputs);
   }
