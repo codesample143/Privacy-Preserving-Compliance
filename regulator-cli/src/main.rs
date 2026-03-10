@@ -88,11 +88,6 @@ enum Commands {
         #[arg(long, value_name = "FILE")]
         leaves_file: Option<PathBuf>,
     },
-    /// Initialize a new Noir compliance definition project
-    Init {
-        /// Name for the new project
-        name: String,
-    },
     /// Validate, compile, deploy a Noir circuit verifier, and register it with a ComplianceDefinition
     Publish {
         /// Path to the Noir project directory (containing Nargo.toml)
@@ -214,7 +209,6 @@ async fn main() -> Result<()> {
             )
             .await
         }
-        Commands::Init { name } => commands::init::run(&name).await,
         Commands::Publish {
             path,
             rpc_url,
