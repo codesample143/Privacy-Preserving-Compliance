@@ -1,5 +1,5 @@
 {
-  "name": "@ppc/demo",
+  "name": "@ppc/demo-non-membership",
   "private": true,
   "type": "module",
   "scripts": {

@@ -1,12 +1,12 @@
 import type { CompiledCircuit } from "@noir-lang/noir_js";
 import { getName, getActiveVersion } from "./chain";
 import { fetchCircuit, fetchLeaves } from "./ipfs";
-import { computeMerkleProofForLeaf, type MerkleProof } from "./merkle";
 import { generateProof } from "./prove";
 import type { InputMap } from "@noir-lang/noirc_abi";
 import type {
   ProofManagerConfig,
   ComplianceVersion,
+  InputFormatter,
   ProofResult,
 } from "./types";
 
@@ -42,20 +42,22 @@ export class ProofManager {
     return fetchLeaves(this.config.ipfsGatewayUrl, leavesCid);
   }
 
-  async computeMerkleProof(
-    leavesCid: string,
-    leafValue: bigint,
-  ): Promise<MerkleProof> {
-    const leaves = await this.fetchLeaves(leavesCid);
-    return computeMerkleProofForLeaf(leaves, leafValue);
-  }
-
+  /**
+   * End-to-end compliance proof generation.
+   * Fetches the active definition and circuit, calls the user-provided
+   * formatter to build circuit inputs, then generates the proof.
+   */
   async generateComplianceProof(
     contractAddress: `0x${string}`,
-    inputs: Record<string, string>,
+    formatter: InputFormatter,
   ): Promise<ProofResult> {
     const definition = await this.getActiveDefinition(contractAddress);
     const circuit = await this.fetchCircuit(definition.metadataHash);
+    const inputs = await formatter({
+      definition,
+      circuit,
+      proofManager: this,
+    });
     return this.prove(circuit, inputs);
   }
 }

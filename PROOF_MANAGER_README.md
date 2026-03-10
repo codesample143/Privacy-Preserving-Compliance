@@ -2,6 +2,8 @@
 
 The Proof Manager is a TypeScript SDK that lets browser-based applications generate and verify zero-knowledge compliance proofs. It orchestrates three steps: reading a compliance definition from an on-chain contract, fetching the corresponding Noir circuit from IPFS, and generating an UltraHonk proof that can be verified on-chain — all running client-side via WASM.
 
+**Input formatting is the application's responsibility.** The SDK provides generic building blocks (chain reads, IPFS fetches, merkle utilities, proof generation) and an `InputFormatter` callback pattern that lets each application define how raw data is transformed into circuit inputs. This allows the SDK to support any circuit without modification.
+
 ## Architecture
 
 ```
@@ -19,16 +21,32 @@ The Proof Manager is a TypeScript SDK that lets browser-based applications gener
 └─────┬──────┴───────┬────────┴──────────┬────────────┘
       │              │                   │
   Ethereum       IPFS Node        WASM runtimes
-  JSON-RPC      (Kubo API)      (acvm, noirc_abi,
+  JSON-RPC     (Kubo gateway)   (acvm, noirc_abi,
                                  barretenberg)
+
+┌─────────────────────────────────────────────────────┐
+│                  Application Layer                  │
+│                                                     │
+│  Each app provides an InputFormatter callback that  │
+│  transforms raw data into circuit-specific inputs.  │
+│                                                     │
+│  ┌──────────────────┐  ┌─────────────────────────┐  │
+│  │ demo-membership  │  │ demo-non-membership     │  │
+│  │                  │  │                          │  │
+│  │ Fetches leaves,  │  │ Fetches leaves, finds   │  │
+│  │ computes 1       │  │ sandwich leaves,         │  │
+│  │ merkle proof     │  │ computes 2 merkle proofs │  │
+│  └──────────────────┘  └─────────────────────────┘  │
+└─────────────────────────────────────────────────────┘
 ```
 
 ### Data flow
 
-1. **Read contract** — `getActiveVersion()` calls the `ComplianceDefinition` contract via viem to get the active `ComplianceVersion` struct (verifier address, params root, IPFS metadata hash, validity window).
-2. **Fetch circuit** — `fetchCircuit()` uses the metadata hash (an IPFS CID) to list the directory on a Kubo node, find the compiled `.json` artifact, and download it.
-3. **Generate proof** — `generateProof()` initializes the Barretenberg WASM backend, executes the Noir circuit to produce a witness, then generates an UltraHonk proof with `verifierTarget: "evm"`.
-4. **Verify on-chain** (optional) — `verifyProof()` simulates then submits a transaction calling `ComplianceDefinition.verify(proof, publicInputs)` through the user's browser wallet.
+1. **Read contract** — `getActiveVersion()` calls the `ComplianceDefinition` contract via viem to get the active `ComplianceVersion` struct (verifier address, merkle root, IPFS metadata hash, leaves hash, validity window).
+2. **Fetch circuit** — `fetchCircuit()` uses the metadata hash (an IPFS CID) to list the directory on a Kubo gateway, find the compiled `.json` artifact, and download it.
+3. **Format inputs** — the application's `InputFormatter` callback receives the definition, circuit, and ProofManager, then fetches any additional data it needs (e.g. leaves from IPFS) and returns the circuit's `InputMap`.
+4. **Generate proof** — `generateProof()` initializes the Barretenberg WASM backend, executes the Noir circuit to produce a witness, then generates an UltraHonk proof with `verifierTarget: "evm"`.
+5. **Verify on-chain** (optional) — `verifyProof()` simulates then submits a transaction calling `ComplianceDefinition.verify(proof)` through the user's browser wallet.
 
 ## File tree
 
@@ -45,37 +63,60 @@ packages/sdk/
 └── src/
     ├── index.ts              # Barrel exports — public API surface
     ├── types.ts              # Core interfaces: ProofManagerConfig,
-    │                         #   ComplianceVersion, ProofInputs, ProofResult
+    │                         #   ComplianceVersion, FormatterContext,
+    │                         #   InputFormatter, ProofResult
     ├── ProofManager.ts       # Orchestrator class tying chain + IPFS + prove
+    │                         #   Accepts InputFormatter for generateComplianceProof()
     ├── chain.ts              # getActiveVersion() — contract read via viem
     │                         # verifyProof() — simulate + submit verify tx
-    ├── ipfs.ts               # fetchCircuit() — Kubo RPC, directory listing,
+    ├── ipfs.ts               # fetchCircuit() — Kubo gateway, directory listing,
     │                         #   artifact download, validation
+    │                         # fetchLeaves() — fetch merkle leaves JSON from IPFS
+    ├── merkle.ts             # computeMerkleProof() — sparse Poseidon2 merkle tree
+    │                         # computeMerkleProofForLeaf() — proof by leaf value
     ├── prove.ts              # generateProof() — Noir witness execution +
     │                         #   Barretenberg UltraHonk proof generation
     └── abi/
         └── ComplianceDefinition.ts
                               # Solidity ABI (getActiveVersion, verify, etc.)
 
-packages/demo/
+packages/demo-membership/
 ├── package.json              # Demo app deps (SDK, Noir WASM, viem, Vite)
 ├── tsconfig.json             # TypeScript config
 ├── vite.config.ts            # Vite dev server — COEP/COOP headers for
 │                             #   SharedArrayBuffer, WASM exclusions
-├── index.html                # Single-page UI with input fields, proof
-│                             #   output areas, verify button
+├── index.html                # Single-page UI
 └── src/
-    ├── main.ts               # App logic — wires UI to SDK, handles wallet
-    │                         #   connection and on-chain verification
+    ├── main.ts               # Membership formatter: fetches leaves, computes
+    │                         #   one merkle inclusion proof, maps to circuit inputs
     └── vite-env.d.ts         # Vite type shims
+
+packages/demo-non-membership/
+├── package.json              # Same deps as demo-membership
+├── tsconfig.json
+├── vite.config.ts
+├── index.html
+└── src/
+    ├── main.ts               # Non-membership formatter: fetches leaves, finds
+    │                         #   sandwich leaves, computes two merkle proofs
+    └── vite-env.d.ts
 ```
 
 ## Key types
 
 ```typescript
 interface ProofManagerConfig {
-  rpcUrl: string;    // Ethereum JSON-RPC endpoint (e.g. Sepolia Infura)
-  ipfsUrl: string;   // Kubo RPC API URL (e.g. http://localhost:5001)
+  rpcUrl: string;          // Ethereum JSON-RPC endpoint (e.g. Sepolia Infura)
+  ipfsGatewayUrl: string;  // IPFS gateway URL (e.g. http://localhost:8080)
+}
+
+interface ComplianceVersion {
+  verifier: `0x${string}`;    // On-chain verifier contract address
+  merkleRoot: `0x${string}`;  // Merkle root of the compliance set
+  tStart: bigint;              // Validity start block
+  tEnd: bigint;                // Validity end block
+  metadataHash: string;        // IPFS CID pointing to compiled circuit
+  leavesHash: string;          // IPFS CID pointing to leaves JSON
 }
 
 interface ProofResult {
@@ -83,20 +124,22 @@ interface ProofResult {
   publicInputs: `0x${string}`[]; // Hex-encoded public inputs array
 }
 
-interface ComplianceVersion {
-  verifier: `0x${string}`;    // On-chain verifier contract address
-  paramsRoot: `0x${string}`;  // Merkle root of compliance parameters
-  tStart: bigint;              // Validity start block
-  tEnd: bigint;                // Validity end block
-  metadataHash: string;        // IPFS CID pointing to compiled circuit
+/** Context passed to an InputFormatter */
+interface FormatterContext {
+  definition: ComplianceVersion;  // Active compliance definition
+  circuit: CompiledCircuit;       // Compiled Noir circuit (includes ABI)
+  proofManager: ProofManager;     // For calling fetchLeaves(), etc.
 }
+
+/** User-provided function that builds circuit inputs from application data */
+type InputFormatter = (ctx: FormatterContext) => Promise<InputMap>;
 ```
 
 ## Prerequisites
 
 - **Node.js** >= 18
 - **pnpm** (workspace manager)
-- **IPFS node** — a running [Kubo](https://docs.ipfs.tech/install/command-line/) instance with the RPC API exposed (default `http://localhost:5001`). CORS must be configured if the demo runs in a browser:
+- **IPFS node** — a running [Kubo](https://docs.ipfs.tech/install/command-line/) instance with the gateway exposed (default `http://localhost:8080`). CORS must be configured if the demo runs in a browser:
   ```sh
   ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["*"]'
   ipfs config --json API.HTTPHeaders.Access-Control-Allow-Methods '["PUT", "POST", "GET"]'
@@ -110,7 +153,7 @@ From the repository root:
 
 ```sh
 pnpm install    # Install all workspace dependencies
-pnpm build      # Build SDK (tsup) then demo (Vite)
+pnpm build      # Build SDK (tsup) then both demos (Vite)
 ```
 
 To build only the SDK:
@@ -119,53 +162,55 @@ To build only the SDK:
 pnpm --filter @ppc/sdk build
 ```
 
-## Run the demo
+## Run the demos
 
 ```sh
-pnpm dev        # Starts Vite dev server (typically http://localhost:5173)
+pnpm dev:membership        # Membership demo (http://localhost:5173)
+pnpm dev:non-membership    # Non-membership demo (http://localhost:5173)
 ```
 
-The demo UI provides fields for:
-
-| Field | Description | Default |
-|-------|-------------|---------|
-| ComplianceDefinition Address | Deployed contract on Sepolia | `0x3e05...961a` |
-| RPC URL | Ethereum JSON-RPC endpoint | Sepolia Infura |
-| IPFS URL | Kubo RPC API URL | `http://localhost:5001` |
-| User Address | Optional — auto-fills the `address` circuit input | — |
+Both demos share the same UI layout: contract address, RPC URL, IPFS gateway, wallet connection, proof generation, and on-chain verification. They differ only in their `InputFormatter` implementation.
 
 ### Generate a proof
 
-1. Fill in the fields (defaults work for the deployed hello_world circuit).
-2. Click **Generate Proof**.
-3. The app will prompt for any circuit inputs not covered by the User Address field.
+1. Enter a ComplianceDefinition contract address deployed on Sepolia.
+2. Connect your wallet — your address is used as a public circuit input.
+3. Click **Generate Proof**.
 4. Wait 30–60 seconds for WASM initialization and proof generation.
 5. The proof and public inputs appear in the output text areas.
 
 ### Verify on-chain
 
 1. After proof generation, a green **Verify On-Chain** button appears.
-2. Click it — MetaMask will prompt to connect and then to confirm a transaction.
+2. Click it — MetaMask will prompt to confirm a transaction.
 3. The SDK first simulates the `verify()` call to catch invalid proofs before spending gas.
 4. On success, the transaction hash is displayed.
 
 ## Use the SDK programmatically
 
-### End-to-end (recommended)
+### With an InputFormatter (recommended)
 
 ```typescript
-import { ProofManager } from "@ppc/sdk";
+import { ProofManager, computeMerkleProofForLeaf, type InputFormatter } from "@ppc/sdk";
 
 const pm = new ProofManager({
   rpcUrl: "https://sepolia.infura.io/v3/YOUR_KEY",
-  ipfsUrl: "http://localhost:5001",
+  ipfsGatewayUrl: "http://localhost:8080",
 });
 
-const result = await pm.generateComplianceProof(
-  "0x3e05D540B05F6379A11F3ed61B2065C01e22961a",
-  { address: "0xYourAddress", secret: "42" },
-);
+// Define how your circuit's inputs are built
+const membershipFormatter: InputFormatter = async (ctx) => {
+  const leaves = await ctx.proofManager.fetchLeaves(ctx.definition.leavesHash);
+  const proof = computeMerkleProofForLeaf(leaves, BigInt(userAddress));
+  return {
+    address: userAddress,
+    root: ctx.definition.merkleRoot,
+    index: proof.index,
+    hash_path: proof.hashPath,
+  };
+};
 
+const result = await pm.generateComplianceProof(contractAddress, membershipFormatter);
 console.log(result.proof);         // 0x...
 console.log(result.publicInputs);  // [0x..., ...]
 ```
@@ -175,7 +220,7 @@ console.log(result.publicInputs);  // [0x..., ...]
 ```typescript
 import { ProofManager } from "@ppc/sdk";
 
-const pm = new ProofManager({ rpcUrl, ipfsUrl });
+const pm = new ProofManager({ rpcUrl, ipfsGatewayUrl });
 
 // 1. Read contract
 const version = await pm.getActiveDefinition(contractAddress);
@@ -183,7 +228,10 @@ const version = await pm.getActiveDefinition(contractAddress);
 // 2. Fetch circuit from IPFS
 const circuit = await pm.fetchCircuit(version.metadataHash);
 
-// 3. Generate proof
+// 3. Build inputs (your logic here)
+const inputs = { address: "0x...", root: version.merkleRoot, ... };
+
+// 4. Generate proof
 const result = await pm.prove(circuit, inputs);
 ```
 
@@ -219,11 +267,14 @@ Every internal module is also exported for advanced use:
 
 ```typescript
 import {
-  getActiveVersion,   // Read contract directly (no ProofManager needed)
-  fetchCircuit,       // Fetch from IPFS directly
-  generateProof,      // Generate proof from a CompiledCircuit + inputs
-  verifyProof,        // Submit verify transaction on-chain
-  ComplianceDefinitionABI,  // Raw Solidity ABI
+  getActiveVersion,          // Read contract directly (no ProofManager needed)
+  fetchCircuit,              // Fetch from IPFS directly
+  fetchLeaves,               // Fetch merkle leaves from IPFS
+  computeMerkleProof,        // Compute merkle proof by leaf index
+  computeMerkleProofForLeaf, // Compute merkle proof by leaf value
+  generateProof,             // Generate proof from a CompiledCircuit + inputs
+  verifyProof,               // Submit verify transaction on-chain
+  ComplianceDefinitionABI,   // Raw Solidity ABI
 } from "@ppc/sdk";
 ```
 
@@ -235,14 +286,15 @@ import {
 | `@noir-lang/acvm_js` | 1.0.0-beta.18 | Arithmetic Circuit VM (WASM) |
 | `@noir-lang/noirc_abi` | 1.0.0-beta.18 | Noir ABI encoding/decoding |
 | `@aztec/bb.js` | 3.0.0-nightly | Barretenberg backend (UltraHonk proofs) |
+| `@zkpassport/poseidon2` | ^0.6.2 | Poseidon2 hash for merkle tree computation |
 | `viem` | ^2.0.0 | Ethereum JSON-RPC client |
 
 ## Testing
 
 There are no automated tests yet. To verify the system manually:
 
-1. **Build check** — `pnpm build` should complete with no errors for both SDK and demo.
-2. **Contract read** — Run the demo, click Generate Proof, and confirm the status shows a verifier address from the contract.
+1. **Build check** — `pnpm build` should complete with no errors for SDK and both demos.
+2. **Contract read** — Run a demo, click Generate Proof, and confirm the status shows a verifier address from the contract.
 3. **IPFS fetch** — Confirm the circuit is fetched (requires a running Kubo node with the circuit pinned).
 4. **Proof generation** — Confirm proof hex and public inputs appear in the output.
 5. **On-chain verification** — Click Verify On-Chain with a connected MetaMask on Sepolia and confirm the transaction succeeds.
@@ -256,4 +308,4 @@ Cross-Origin-Opener-Policy: same-origin
 Cross-Origin-Embedder-Policy: require-corp
 ```
 
-If you deploy the demo, your hosting must also send these headers.
+If you deploy the demos, your hosting must also send these headers.

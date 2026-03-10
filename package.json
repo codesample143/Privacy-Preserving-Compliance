@@ -2,6 +2,7 @@
   "private": true,
   "scripts": {
     "build": "pnpm -r build",
-    "dev": "pnpm --filter @ppc/demo dev"
+    "dev:membership": "pnpm --filter @ppc/demo-membership dev",
+    "dev:non-membership": "pnpm --filter @ppc/demo-non-membership dev"
   }
 }

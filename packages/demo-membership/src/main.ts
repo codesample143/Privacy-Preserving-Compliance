@@ -1,6 +1,12 @@
 import initACVM from "@noir-lang/acvm_js";
 import initNoirC from "@noir-lang/noirc_abi";
-import { ProofManager, verifyProof, type ProofResult } from "@ppc/sdk";
+import {
+  ProofManager,
+  computeMerkleProofForLeaf,
+  verifyProof,
+  type InputFormatter,
+  type ProofResult,
+} from "@ppc/sdk";
 import { createPublicClient, createWalletClient, custom, http } from "viem";
 import { sepolia } from "viem/chains";
 
@@ -114,62 +120,32 @@ $btn.addEventListener("click", async () => {
     });
 
     const contractAddr = $contract.value.trim() as `0x${string}`;
-
-    setStatus("Reading contract...");
-    const definition = await pm.getActiveDefinition(contractAddr);
-    setStatus(
-      `Got version: verifier=${definition.verifier.slice(0, 10)}... metadataHash=${definition.metadataHash.slice(0, 12)}...`,
-    );
-
-    setStatus("Fetching circuit from IPFS...");
-    const circuit = await pm.fetchCircuit(definition.metadataHash);
-
-    // Build inputs from circuit ABI
-    const inputs: Record<string, string | string[]> = {};
     const userAddr = $userAddr.value.trim();
     if (!userAddr) {
       setStatus("Connect your wallet first — your address is used as a public input.");
       return;
     }
 
-    // Auto-compute merkle proof if leaves are published
-    let merkleProof: { index: string; hashPath: string[]; root: string } | null = null;
-    if (definition.leavesHash) {
+    // Membership-specific input formatter:
+    // fetches leaves, computes a merkle inclusion proof, and maps
+    // the result onto the circuit's expected inputs.
+    const membershipFormatter: InputFormatter = async (ctx) => {
       setStatus("Fetching merkle leaves from IPFS...");
-      try {
-        merkleProof = await pm.computeMerkleProof(
-          definition.leavesHash,
-          BigInt(userAddr),
-        );
-      } catch {
-        setStatus("Your address was not found in the compliance set.");
-        return;
-      }
-    }
+      const leaves = await ctx.proofManager.fetchLeaves(ctx.definition.leavesHash);
 
-    for (const param of circuit.abi.parameters) {
-      if (param.name === "address") {
-        inputs[param.name] = userAddr;
-      } else if (param.name === "root") {
-        inputs[param.name] = definition.merkleRoot;
-      } else if (param.name === "index" && merkleProof) {
-        inputs[param.name] = merkleProof.index;
-      } else if (param.name === "hash_path" && merkleProof) {
-        inputs[param.name] = merkleProof.hashPath;
-      } else {
-        const val = prompt(
-          `Enter value for "${param.name}" (${param.visibility}, ${param.type.kind}):`,
-        );
-        if (val === null) {
-          setStatus("Cancelled.");
-          return;
-        }
-        inputs[param.name] = val;
-      }
-    }
+      setStatus("Computing merkle proof...");
+      const proof = computeMerkleProofForLeaf(leaves, BigInt(userAddr));
+
+      return {
+        address: userAddr,
+        root: ctx.definition.merkleRoot,
+        index: proof.index,
+        hash_path: proof.hashPath,
+      };
+    };
 
     setStatus("Generating proof... (this may take 30-60 seconds)");
-    const result = await pm.prove(circuit, inputs);
+    const result = await pm.generateComplianceProof(contractAddr, membershipFormatter);
 
     $proof.value = result.proof;
     $publicInputs.value = result.publicInputs.join("\n");
