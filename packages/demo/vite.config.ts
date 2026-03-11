@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import { nodePolyfills } from "vite-plugin-node-polyfills";
 
 export default defineConfig({
+  base: "/ppc-demo/",
   plugins: [nodePolyfills({ include: ["buffer"] })],
   server: {
     headers: {
