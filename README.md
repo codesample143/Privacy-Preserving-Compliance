@@ -98,3 +98,6 @@ All contributions must be made by opening a PR to main and requires a review to 
 
 This is a master's thesis project and feedback and suggestions are welcome. Please open issues for bugs or feature requests.
 
+
+# Building to host
+pnpm --filter @ppc/sdk build && pnpm --filter @ppc/demo build && cp -r packages/demo/dist/* /path/to/your-username.github.io/ppc-demo/

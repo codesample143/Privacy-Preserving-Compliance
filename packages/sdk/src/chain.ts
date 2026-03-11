@@ -37,6 +37,19 @@ export async function getActiveVersion(
   };
 }
 
+export async function getVersionCount(
+  rpcUrl: string,
+  contractAddress: `0x${string}`,
+): Promise<bigint> {
+  const client = createPublicClient({ transport: http(rpcUrl) });
+
+  return client.readContract({
+    address: contractAddress,
+    abi: ComplianceDefinitionABI,
+    functionName: "getVersionCount",
+  }) as Promise<bigint>;
+}
+
 export async function verifyProof(
   walletClient: WalletClient,
   publicClient: PublicClient,
