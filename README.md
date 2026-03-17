@@ -3,7 +3,7 @@ Prototype implementation of masters thesis framework `Privacy Preserving Complia
 
 This code is for demonstration purposes only.  It is not audited and should not be used in production environments.
 
-## Project Overview
+## Framework Overview
 
 This repository contains the implementation of a framework for composable privacy preserving compliance on blockchain systems. The framework enables regulatory bodies to publish compliance definitions, applications to require compliance proofs, and users to prove compliance without revealing private transaction data.
 
@@ -50,8 +50,8 @@ The framework supports three types of actors:
                   proof
 ```
 
-## What's in this repository
-This repository contains both an implementation of the tools described in the thesis document and a demo that uses those tools.
+# What's in this repository
+This repository contains an implementation of the tools described in the thesis document and a demo that uses those tools.
 
 ## tool: `regulator-cli`
 Command line Rust binary to be used by regulators to construct a compliance definition, upload it to IPFS as a noir circuit, and publish a verifier contract on-chain.  
