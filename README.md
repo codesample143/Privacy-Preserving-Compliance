@@ -3,15 +3,17 @@ Prototype implementation of masters thesis framework `Privacy Preserving Complia
 
 This code is for demonstration purposes only.  It is not audited and should not be used in production environments.
 
-## Overview
+## Project Overview
 
-This repository contains the implementation of a framework for composable privacy-preserving compliance on blockchain systems. The framework enables regulatory bodies to publish compliance definitions, applications to require compliance proofs, and users to prove compliance without revealing private transaction data.
+This repository contains the implementation of a framework for composable privacy preserving compliance on blockchain systems. The framework enables regulatory bodies to publish compliance definitions, applications to require compliance proofs, and users to prove compliance without revealing private transaction data.
+
+This framework is distinguished by its composability and generality, designed explicitly for a global ecosystem with many regulatory bodies whose requirements evolve over time.  Compliance definitions are chain-agnostic, modular with respect to privacy mechanisms, versioned to accommodate regulatory updates, and can be combined arbitrarily which allows applications to satisfy multiple jurisdictions simultaneously.
 
 ### Key Features
 
 - **No Deanonymization**: Users prove compliance without revealing transaction histories or balances
 - **Proactive Compliance**: Non-compliant actors are blocked before transactions, not detected after
-- **Rich Compliance Language**: Express complex requirements using composable constraints
+- **Rich Compliance Language**: Express complex requirements logically over on-chain data
 - **Multiple Compliance**: Support for requirements from multiple regulatory jurisdictions
 - **Chain Agnostic**: Works on any blockchain with smart contracts and ZK proof verification
 - **Modular Privacy**: Compatible with any privacy protocol
@@ -48,29 +50,28 @@ The framework supports three types of actors:
                   proof
 ```
 
+## What's in this repository
+This repository contains both an implementation of the tools described in the thesis document and a demo that uses those tools.
 
-## Repository Structure
-```
-privacy-preserving-compliance/
-├── circuits/               # Example Noir compliance circuits
-├── contracts/             # Solidity smart contracts
-├── regulator-cli/         # Rust CLI for regulators
-│   └── src/
-├── proof-manager/         # Rust proof generation system
-│   └── src/
-```
+## tool: `regulator-cli`
+Command line Rust binary to be used by regulators to construct a compliance definition, upload it to IPFS as a noir circuit, and publish a verifier contract on-chain.  
+
+This tool lives in `regulator-cli/`.  See `REGULATOR_CLI_README.md` for more details.
+
+## tool: `proof manager sdk`
+TypeScript SDK used in the frontend of integrating applications.  This SDK takes a compliance definition contract as input, fetches the compliance definition (noir circuit) from IPFS, constructs inputs for the proof, and generates the zk proof of that compliance definition.  It also stores previously-proved compliance definitions for re-use.
+
+This tool lives in `packages/sdk/`.  See `PROOF_MANAGER_README.md` for more details.
+
+## Demo
+The demo uses the `regulator-cli` to construct multiple compliance definitions, deploys example stub applications (ERC-20) that require a proof of those compliance definitions, and generates proofs of them using the `proof manager sdk`.
+
+This demo lives in `sdk/demo/`.  See `DEMO_README.md` for more details.
 
 # Developing
 
-```bash 
-# Build 
-cargo build --bin regulator-cli
-cargo build --bin proof-manager
-
-# Build and run.  For debugging, omit --release
-cargo run --release --bin regulator-cli
-cargo run --release --bin proof-manager
-
+```bash
+```
 # NOIR CIRCUITS
 cd circuits/hello_world
 nargo check
@@ -88,7 +89,6 @@ bb verify -p ./target/proof -k ./target/vk
 bb write_vk -b ./target/hello_world.json -o ./target --oracle_hash keccak
 # Generate the Solidity verifier from the vkey
 bb write_solidity_verifier -k ./target/vk -o ./target/Verifier.sol
-
 ```
 
 
