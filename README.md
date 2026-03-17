@@ -73,7 +73,17 @@ Builds a poseidon2 Merkle tree using a TypeScript library compatible with Noir's
 
 This tool lives in `packages/build-merkle`.  See `BUILD_MERKLE.md` for more details.
 
+# Contributing
+All contributions must be made by opening a PR to main and requires a review to be merged.  Include sufficient tests with any code implemented.
+
+This is a master's thesis project and feedback and suggestions are welcome. Please open issues for bugs or feature requests.
+
+
+# Building to host
+pnpm --filter @ppc/sdk build && pnpm --filter @ppc/demo build && cp -r packages/demo/dist/* /path/to/your-username.github.io/ppc-demo/
+
 # Developing
+> The section below is just a personal cheat sheet and should be moved elsewhere.
 
 ```bash
 ```
@@ -98,11 +108,3 @@ bb write_solidity_verifier -k ./target/vk -o ./target/Verifier.sol
 
 
 
-# Contributing
-All contributions must be made by opening a PR to main and requires a review to be merged.  Include sufficient tests with any code implemented.
-
-This is a master's thesis project and feedback and suggestions are welcome. Please open issues for bugs or feature requests.
-
-
-# Building to host
-pnpm --filter @ppc/sdk build && pnpm --filter @ppc/demo build && cp -r packages/demo/dist/* /path/to/your-username.github.io/ppc-demo/
