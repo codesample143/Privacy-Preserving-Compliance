@@ -59,12 +59,14 @@ Use the build-merkle tool to construct leaves files and compute merkle roots. Th
 
 ```sh
 # Sanction list (must be sorted for non-membership proofs)
+# Set the output merkle root as SANCTION_MERKLE_ROOT for following commands
 npx tsx packages/build-merkle/index.ts \
   -f sanction_addresses.txt \
   -o sanction_leaves.json \
   --sorted
 
 # Whitelist
+# Set the output merkle root as WHITELIST_MERKLE_ROOT for following commands
 npx tsx packages/build-merkle/index.ts \
   -f whitelist_addresses.txt \
   -o whitelist_leaves.json
