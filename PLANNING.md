@@ -68,7 +68,6 @@ Enable users to generate compliance proofs efficiently
 
 **Key Functionality**:
 - Fetch compliance definition from IPFS or direct input
-- Verify regulator signatures
 - Index user transaction history
 - Fetch public proof inputs from verifier contract
 - Generate individual constraint proofs
@@ -97,64 +96,51 @@ function transfer(address recipient, uint256 amount, bytes proof) {
 
 ### Milestone 1: Regulator Stack
 
-#### Core CLI Development
-- [ ] `init` command
-  - [ ] Generate example config files
-- [ ] `publish` command
-  - [ ] Take Noir circuit input
-  - [ ] Sign circuit with regulator private key
-  - [ ] Upload to IPFS (integrate with ipfs-api crate)
-  - [ ] Deploy verifier contract
-- [ ] `update` command
-  - [ ] Update circuit (deploy new verifier)
-  - [ ] Update public parameters (contract call)
-  - [ ] Version management
+#### Core CLI Development (regulator-cli/)
+- [x] `new-compliance-definition` command
+  - [x] Take Noir circuit input
+  - [x] Upload to IPFS 
+  - [x] Deploy verifier contract
+- [x] `update-circuit` command
+- [x] `update-parameters` command
 
-#### Verifier Contract Development
-- [ ] Extend Noir-generated verifier
-  - [ ] Add version tracking
-  - [ ] Implement parameter update functions
-  - [ ] Add metadata storage (IPFS hash)
-- [ ] Access control
-  - [ ] Ownable pattern for updates
-  - [ ] Regulator signature verification 
+#### Verifier Contract Development (contracts/src/ComplianceDefinition.sol)
+- [x] Add version tracking
+- [x] Implement parameter update functions
+- [x] Add metadata storage (IPFS hash)
+- [x] Ownable pattern for updates
 
-#### Example Compliance Circuits
-- [ ] Simple single-constraint circuits
-  - [ ] Sanctions list check (NON-MEM)
-  - [ ] Allow-list check (MEM)
-  - [ ] Account age constraint (AGE)
+#### Example Compliance Circuits (circuits/)
+- [x] Sanctions list check (NON-MEM)
+- [x] Allow-list check (MEM)
+- [ ] Account age constraint (AGE)
 
 ### Milestone 2: User Proof Manager
 
 #### Circuit handling
-- [ ] Input verifier contract address
-- [ ] Fetch Noir code of compliance definition from IPFS
-- [ ] Verify regulator signature 
-- [ ] Generate circuit from Noir code
+- [x] Input verifier contract address
+- [x] Fetch Noir code and compiled circuit of compliance definition from IPFS
+- [ ] Maybe: compile .nr code and verify it matches the compiled circuit on IPFS
 
 #### Indexing System
 - [ ] Fetch on-chain data required for proof generation
-  - [ ] Indexing chain data
-  - [ ] Query verifier contract for public inputs
+- [ ] Indexing chain data
+- [ ] Query verifier contract for public inputs
 
 #### Proof Generation 
-- [ ] Input preparation
-  - [ ] Format public inputs from contract
-  - [ ] Handle private user inputs
+- [x] Input preparation
+  - [x] Format public inputs from contract
+  - [x] Handle private user inputs
   - [ ] Prepare witness data from tx history
-- [ ] Proof generation
-  - [ ] Interface with Noir proving system
-  - [ ] Generate individual constraint proofs
-- [ ] Proof storage system
+- [x] Proof generation
+  -[x] Interface with Noir proving system
+- [x] Proof storage system
 
 ### Milestone 3: Example Application - Compliant Stablecoin
 
-- [ ] Base ERC20 implementation
-- [ ] Integration with framework
-  - [ ] Add proof verification to transfer()
-  - [ ] Add proof verification to approve()
-- [ ] Simple frontend
+- [x] Base ERC20 implementation
+- [x] Mint requires proof
+- [x] Simple frontend (in Demo)
 
 ### Milestone 4: Benchmarking
 
@@ -175,7 +161,7 @@ function transfer(address recipient, uint256 amount, bytes proof) {
 ## Post-MVP
 Still required, but we should focus on the MVP first
 
-#### Proof aggregation
+#### Proof aggregation (constraints)
 - [ ] Modify verifier contract to aggregate and verify multiple proofs
 - [ ] Example compliance definition that requires multiple constraints
 - [ ] Modify proof manager CLI to generate proofs of multiple constraints
@@ -186,6 +172,10 @@ Still required, but we should focus on the MVP first
   - [ ] Require proof on deposit
   - [ ] Verify proof on withdrawal
 - [ ] Deploy demo frontend
+
+#### Prettier demo
+- [ ] Make demo nicer for public sharing
+- [ ] Maybe: visualization of deployed compliance definitions and applications that use them.  Would look like a DAG.  And have this either dynamically updatable or render with the demo.
 
 ---
 ## Extensions and future work
