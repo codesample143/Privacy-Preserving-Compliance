@@ -1,0 +1,22 @@
+{
+  "name": "@ppc/benchmark",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "bench": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@noir-lang/noir_js": "1.0.0-beta.18",
+    "@noir-lang/acvm_js": "1.0.0-beta.18",
+    "@noir-lang/noirc_abi": "1.0.0-beta.18",
+    "@aztec/bb.js": "3.0.0-nightly.20260106",
+    "@zkpassport/poseidon2": "^0.6.2",
+    "@ppc/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.5.0"
+  }
+}

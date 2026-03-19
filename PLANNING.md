@@ -146,7 +146,6 @@ function transfer(address recipient, uint256 amount, bytes proof) {
 
 ### Performance Metrics
 - [ ] Proof generation time per constraint type
-- [ ] Gas costs for verification
 - [ ] Proof size measurements
 - [ ] Transaction history size scaling
 
@@ -160,6 +159,13 @@ function transfer(address recipient, uint256 amount, bytes proof) {
 ---
 ## Post-MVP
 Still required, but we should focus on the MVP first
+
+#### More constraints
+- [ ] Address age constraint
+- [ ] Interact constraint
+- [ ] non-interact constraint
+- [ ] structuring constraint
+- [ ] Valid ZK passport constraint
 
 #### Proof aggregation (constraints)
 - [ ] Modify verifier contract to aggregate and verify multiple proofs
@@ -195,6 +201,9 @@ Still required, but we should focus on the MVP first
 - [ ] Design readable constraint syntax
   - [ ] Transpiler to Noir
 - [ ] Example constraints in DSL
+
+#### Benchmark improvements
+- [ ] Per browser benchmarks.  Investigate proof generation in chrome, firefox, safari, etc
 
 #### Web Applications
 - [ ] Proof manager web UI
