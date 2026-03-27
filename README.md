@@ -83,7 +83,7 @@ Proof generation in this framework relies on Noir's Barretenberg proving library
 
 Both backends use identical circuit inputs, the same compiled circuit artifacts, and the same measurement methodology: timing witness generation and proof generation as separate phases. This controlled comparison isolates the performance impact of the runtime environment from the circuit complexity itself.
 
-Barretenberg initialization time is the one-time cost of booting the proving runtime and is recorded separately in both cases. This cost is negligible for the native backend but significant for WASM, where it includes loading and compiling the WASM module. In a browser context, users pay this cost only on their first proof in a browser session.
+Barretenberg initialization time is the one-time cost of booting the proving runtime and is recorded separately. This cost is negligible for the native backend but averages 1.11 seconds for WASM, as it includes loading and compiling the WASM module. In a browser context, users pay this cost only on their first proof in a browser session.  This initialization time is not included in the below benchmark data.
 
 ## `circuits/membership`
 
