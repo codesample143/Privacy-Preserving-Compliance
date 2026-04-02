@@ -131,7 +131,6 @@ pnpm --filter @ppc/sdk build && pnpm --filter @ppc/demo build && cp -r packages/
 > The section below is just a personal cheat sheet and should be moved elsewhere.
 
 ```bash
-```
 # NOIR CIRCUITS
 cd circuits/hello_world
 nargo check
