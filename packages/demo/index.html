@@ -5,18 +5,91 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Privacy Preserving Compliance Demo</title>
   <style>
+    /* -- Theme variables -- */
+    :root {
+      --bg: #0a0a0a;
+      --text: #e0e0e0;
+      --text-muted: #999;
+      --text-dim: #777;
+      --text-dimmer: #888;
+      --text-faint: #666;
+      --border: #333;
+      --border-light: #252525;
+      --surface: #141414;
+      --surface-alt: #1e1e1e;
+      --code-bg: #0d0d0d;
+      --code-text: #c8c8c8;
+      --addr-text: #aaa;
+      --label-text: #bbb;
+      --btn-bg: #1a1a2e;
+      --btn-bg-hover: #1f1f3a;
+      --btn-border: #333;
+      --arrow: #555;
+      --link: #60a5fa;
+      --noir-kw: #c678dd;
+      --noir-type: #e5c07b;
+      --noir-fn: #61afef;
+      --noir-str: #98c379;
+      --noir-num: #d19a66;
+      --noir-op: #56b6c2;
+    }
+    body.light {
+      --bg: #f8f8f8;
+      --text: #1a1a1a;
+      --text-muted: #555;
+      --text-dim: #666;
+      --text-dimmer: #777;
+      --text-faint: #999;
+      --border: #d0d0d0;
+      --border-light: #e0e0e0;
+      --surface: #ffffff;
+      --surface-alt: #f0f0f0;
+      --code-bg: #f5f5f5;
+      --code-text: #333;
+      --addr-text: #555;
+      --label-text: #444;
+      --btn-bg: #e8e8f0;
+      --btn-bg-hover: #d8d8e8;
+      --btn-border: #bbb;
+      --arrow: #aaa;
+      --link: #2563eb;
+      --noir-kw: #a626a4;
+      --noir-type: #c18401;
+      --noir-fn: #4078f2;
+      --noir-str: #50a14f;
+      --noir-num: #986801;
+      --noir-op: #0184bc;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: system-ui, -apple-system, sans-serif;
-      background: #0a0a0a;
-      color: #e0e0e0;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
       padding: 1.5rem;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    /* -- Theme toggle -- */
+    .theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.35rem 0.6rem;
+      cursor: pointer;
+      font-size: 1.1rem;
+      line-height: 1;
+      z-index: 100;
+      color: var(--text);
     }
 
     /* -- Header -- */
     .header {
-      border: 1px solid #333;
+      border: 1px solid var(--border);
       border-radius: 8px;
       padding: 1.25rem 1.5rem;
       margin-bottom: 1.5rem;
@@ -24,13 +97,13 @@
     .header h1 {
       font-size: 1.7rem;
       font-weight: 400;
-      color: #999;
+      color: var(--text-muted);
       text-align: center;
       margin-bottom: 0.75rem;
     }
     .header p {
       font-size: 1.25rem;
-      color: #777;
+      color: var(--text-dim);
       text-align: center;
       line-height: 1.5;
       max-width: 800px;
@@ -45,7 +118,7 @@
       font-size: 0.85rem;
     }
     .wallet-bar span {
-      color: #888;
+      color: var(--text-dimmer);
       font-family: monospace;
       font-size: 0.8rem;
     }
@@ -53,13 +126,13 @@
       padding: 0.4rem 1rem;
       font-size: 0.8rem;
       font-weight: 600;
-      border: 1px solid #555;
+      border: 1px solid var(--arrow);
       border-radius: 4px;
       cursor: pointer;
       background: transparent;
-      color: #e0e0e0;
+      color: var(--text);
     }
-    .wallet-bar button:hover { border-color: #888; }
+    .wallet-bar button:hover { border-color: var(--text-dimmer); }
 
     /* -- Panel grid -- */
     .panels {
@@ -94,30 +167,30 @@
 
     /* -- Panel sections (inner boxes) -- */
     .section {
-      background: #141414;
-      border: 1px solid #252525;
+      background: var(--surface);
+      border: 1px solid var(--border-light);
       border-radius: 6px;
       padding: 0.75rem;
     }
     .section-label {
       font-size: 0.95rem;
-      color: #bbb;
+      color: var(--label-text);
       margin-bottom: 0.4rem;
     }
     .section .addr {
       font-family: monospace;
       font-size: 0.75rem;
-      color: #aaa;
+      color: var(--addr-text);
       word-break: break-all;
     }
     .section .info-row {
       display: flex;
       justify-content: space-between;
       font-size: 0.78rem;
-      color: #999;
+      color: var(--text-muted);
       margin-top: 0.25rem;
     }
-    .section .info-row .label { color: #666; }
+    .section .info-row .label { color: var(--text-faint); }
 
     /* -- Buttons -- */
     .panel button {
@@ -131,15 +204,16 @@
       transition: opacity 0.15s;
     }
     .panel button:disabled {
-      opacity: 0.4;
+      opacity: 0.3;
       cursor: not-allowed;
+      filter: grayscale(50%);
     }
     .btn-proof {
-      background: #1a1a2e;
-      border: 1px solid #333 !important;
-      color: #e0e0e0;
+      background: var(--btn-bg);
+      border: 1px solid var(--btn-border) !important;
+      color: var(--text);
     }
-    .btn-proof:hover:not(:disabled) { background: #1f1f3a; }
+    .btn-proof:hover:not(:disabled) { background: var(--btn-bg-hover); }
 
     .btn-mint {
       color: #fff;
@@ -151,13 +225,13 @@
     /* -- Status text -- */
     .status {
       font-size: 0.78rem;
-      color: #888;
+      color: var(--text-dimmer);
       min-height: 1.2rem;
       white-space: pre-line;
     }
     .mint-status {
       font-size: 0.78rem;
-      color: #888;
+      color: var(--text-dimmer);
       min-height: 1.2rem;
       word-break: break-all;
     }
@@ -172,8 +246,8 @@
     }
     .flow-box {
       width: 100%;
-      background: #141414;
-      border: 1px solid #333;
+      background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: 8px;
       padding: 1.25rem 1.5rem;
       text-align: center;
@@ -181,11 +255,11 @@
     .flow-box-title {
       font-size: 1rem;
       font-weight: 600;
-      color: #e0e0e0;
+      color: var(--text);
       margin-bottom: 0.3rem;
     }
     .flow-box-title a {
-      color: #60a5fa;
+      color: var(--link);
       text-decoration: none;
     }
     .flow-box-title a:hover {
@@ -193,7 +267,7 @@
     }
     .flow-box .pdf-preview {
       margin-top: 0.75rem;
-      border: 1px solid #333;
+      border: 1px solid var(--border);
       border-radius: 4px;
       overflow: hidden;
       background: #fff;
@@ -207,18 +281,18 @@
     }
     .flow-box-sub {
       font-size: 0.82rem;
-      color: #888;
+      color: var(--text-dimmer);
       line-height: 1.5;
     }
     .flow-box-sub .addr-list {
       font-family: monospace;
       font-size: 0.78rem;
-      color: #aaa;
+      color: var(--addr-text);
     }
     .flow-box .math {
       font-family: "Times New Roman", "Latin Modern Math", Georgia, serif;
       font-size: 1.35rem;
-      color: #e0e0e0;
+      color: var(--text);
       letter-spacing: 0.02em;
     }
     .flow-box .math .fn {
@@ -226,40 +300,40 @@
     }
     .flow-box .math sub {
       font-size: 0.7em;
-      color: #bbb;
+      color: var(--label-text);
     }
     .flow-box.code-file {
       padding: 0;
       overflow: hidden;
     }
     .file-header {
-      background: #1e1e1e;
-      border-bottom: 1px solid #333;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
       padding: 0.4rem 0.85rem;
       font-size: 0.72rem;
       font-family: monospace;
-      color: #888;
+      color: var(--text-dimmer);
       text-align: left;
     }
     .flow-box pre {
       text-align: left;
-      background: #0d0d0d;
+      background: var(--code-bg);
       border: none;
       border-radius: 0;
       padding: 1rem;
       overflow-x: auto;
       font-size: 0.75rem;
       line-height: 1.55;
-      color: #c8c8c8;
+      color: var(--code-text);
       margin: 0;
     }
     /* Noir syntax highlighting */
-    .noir-kw { color: #c678dd; }
-    .noir-type { color: #e5c07b; }
-    .noir-fn { color: #61afef; }
-    .noir-str { color: #98c379; }
-    .noir-num { color: #d19a66; }
-    .noir-op { color: #56b6c2; }
+    .noir-kw { color: var(--noir-kw); }
+    .noir-type { color: var(--noir-type); }
+    .noir-fn { color: var(--noir-fn); }
+    .noir-str { color: var(--noir-str); }
+    .noir-num { color: var(--noir-num); }
+    .noir-op { color: var(--noir-op); }
     .flow-arrow {
       display: flex;
       flex-direction: column;
@@ -269,11 +343,11 @@
     .flow-arrow-line {
       width: 2px;
       height: 28px;
-      background: #555;
+      background: var(--arrow);
     }
     .flow-arrow-label {
       font-size: 1.2rem;
-      color: #999;
+      color: var(--text-muted);
       font-style: italic;
       padding: 0.25rem 0;
       text-align: center;
@@ -283,7 +357,7 @@
       height: 0;
       border-left: 6px solid transparent;
       border-right: 6px solid transparent;
-      border-top: 8px solid #555;
+      border-top: 8px solid var(--arrow);
     }
 
     /* -- Section divider -- */
@@ -291,22 +365,26 @@
       max-width: 640px;
       margin: 1.5rem auto 1.5rem;
       border: none;
-      border-top: 1px solid #333;
+      border-top: 1px solid var(--border);
     }
     .section-heading {
       font-size: 1.1rem;
       font-weight: 400;
-      color: #999;
+      color: var(--text-muted);
       text-align: center;
       margin-bottom: 1.5rem;
     }
   </style>
 </head>
 <body>
+  <button class="theme-toggle" id="themeToggle" title="Toggle light/dark mode">
+    <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+  </button>
+
   <!-- Blurb -->
   <div style="text-align:center; margin:0 auto 2rem;">
-    <h1 style="font-size:1.3rem; font-weight:600; color:#e0e0e0; margin-bottom:0.5rem; white-space:nowrap;">Real-world regulation enforced on-chain with zero-knowledge proofs</h1>
-    <p style="font-size:1.15rem; color:#888;">Users prove they're compliant with your requirements without revealing any other information</p>
+    <h1 style="font-size:1.3rem; font-weight:600; color:var(--text); margin-bottom:0.5rem; white-space:nowrap;">Real-world regulation enforced on-chain with zero-knowledge proofs</h1>
+    <p style="font-size:1.15rem; color:var(--text-dimmer);">Users prove they're compliant with your requirements without revealing any other information</p>
   </div>
 
   <!-- High-level flow -->
@@ -413,14 +491,14 @@
 
     <!-- Box 5: Proof output -->
     <div class="flow-box">
-      <div style="font-family:monospace; font-size:0.85rem; color:#aaa; word-break:break-all;">0x1a3f7c9e2b8d04f6e5a73b1c8d2e9f4a6b0d3e7f82c5a19b4e0d6f3a28...</div>
+      <div style="font-family:monospace; font-size:0.85rem; color:var(--addr-text); word-break:break-all;">0x1a3f7c9e2b8d04f6e5a73b1c8d2e9f4a6b0d3e7f82c5a19b4e0d6f3a28...</div>
     </div>
 
   </div>
 
   <!-- Header -->
   <div class="header">
-    <h1>Privacy Preserving Compliance Demo <span style="font-size:0.75rem;color:#666">(Sepolia Testnet)</span></h1>
+    <h1>Privacy Preserving Compliance Demo <span style="font-size:0.75rem;color:var(--text-faint)">(Sepolia Testnet)</span></h1>
     <p>
       <strong style="color:#fb7185">SafeSwap</strong> and <strong style="color:#14b8a6">CleanMixer</strong> require a proof of <strong>the same</strong> compliance definition: your address is not on a specific sanction list.
       Generate the proof once and use it for both applications.
@@ -428,7 +506,7 @@
     <p style="margin-top: 0.5rem">
       <strong style="color:#3b82f6">VerifiedLend</strong> requires a proof that your address is on a specific whitelist.
     </p>
-    <p style="margin-top: 0.75rem; font-size:0.75rem; color:#666;">
+    <p style="margin-top: 0.75rem; font-size:0.75rem; color:var(--text-faint);">
       (These example applications are simply ERC-20 contracts for demonstration purposes)
     </p>
   </div>
@@ -443,7 +521,7 @@
 
     <!-- App 1: SafeSwap -->
     <div class="panel" data-color="coral" id="app1">
-      <div class="panel-name">SafeSwap <span data-ref="tokenAddr" style="font-family:monospace;font-size:0.72rem;color:#888;font-weight:400">--</span></div>
+      <div class="panel-name">SafeSwap <span data-ref="tokenAddr" style="font-family:monospace;font-size:0.72rem;color:var(--text-dimmer);font-weight:400">--</span></div>
 
       <div class="section">
         <div class="section-label">Required compliance: <strong data-ref="cdName">sanction list</strong></div>
@@ -459,7 +537,7 @@
 
     <!-- App 2: CleanMixer -->
     <div class="panel" data-color="teal" id="app2">
-      <div class="panel-name">CleanMixer <span data-ref="tokenAddr" style="font-family:monospace;font-size:0.72rem;color:#888;font-weight:400">--</span></div>
+      <div class="panel-name">CleanMixer <span data-ref="tokenAddr" style="font-family:monospace;font-size:0.72rem;color:var(--text-dimmer);font-weight:400">--</span></div>
 
       <div class="section">
         <div class="section-label">Required compliance: <strong data-ref="cdName">sanction list</strong></div>
@@ -475,7 +553,7 @@
 
     <!-- App 3: VerifiedLend -->
     <div class="panel" data-color="blue" id="app3">
-      <div class="panel-name">VerifiedLend <span data-ref="tokenAddr" style="font-family:monospace;font-size:0.72rem;color:#888;font-weight:400">--</span></div>
+      <div class="panel-name">VerifiedLend <span data-ref="tokenAddr" style="font-family:monospace;font-size:0.72rem;color:var(--text-dimmer);font-weight:400">--</span></div>
 
       <div class="section">
         <div class="section-label">Required compliance: <strong data-ref="cdName">whitelist</strong></div>
@@ -505,6 +583,23 @@
     canvas.width = viewport.width;
     canvas.height = viewport.height;
     await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+  </script>
+  <script>
+    const toggle = document.getElementById("themeToggle");
+    const icon = document.getElementById("themeIcon");
+    const saved = localStorage.getItem("theme");
+    if (saved !== "dark") document.body.classList.add("light");
+    const sunPath = '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>';
+    const moonPath = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>';
+    function updateIcon() {
+      icon.innerHTML = document.body.classList.contains("light") ? moonPath : sunPath;
+    }
+    updateIcon();
+    toggle.addEventListener("click", () => {
+      document.body.classList.toggle("light");
+      localStorage.setItem("theme", document.body.classList.contains("light") ? "light" : "dark");
+      updateIcon();
+    });
   </script>
   <script type="module" src="/src/main.ts"></script>
 </body>
