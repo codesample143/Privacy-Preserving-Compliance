@@ -14,7 +14,8 @@ sol! {
     contract ComplianceDefinition {
         function updateCircuit(
             address newVerifier,
-            bytes32 newMerkleRoot,
+            bytes32 newMerkleRoot_1,
+            bytes32 newMerkleRoot_2,
             uint256 tStart,
             uint256 tEnd,
             string calldata metadataHash,
@@ -170,7 +171,8 @@ pub async fn call_update_circuit(
     provider: &(impl Provider<Ethereum> + Clone),
     compliance_definition_addr: Address,
     new_verifier: Address,
-    merkle_root: FixedBytes<32>,
+    merkle_root_1: FixedBytes<32>,
+    merkle_root_2: FixedBytes<32>,
     t_start: U256,
     t_end: U256,
     metadata_uri: String,
@@ -179,7 +181,7 @@ pub async fn call_update_circuit(
     let contract = ComplianceDefinition::new(compliance_definition_addr, provider);
 
     let pending_tx = contract
-        .updateCircuit(new_verifier, merkle_root, t_start, t_end, metadata_uri, leaves_hash)
+        .updateCircuit(new_verifier, merkle_root_1, merkle_root_2, t_start, t_end, metadata_uri, leaves_hash)
         .send()
         .await
         .context("failed to broadcast updateCircuit transaction")?;
@@ -197,13 +199,14 @@ pub async fn call_update_circuit(
 pub async fn call_update_params(
     provider: &(impl Provider<Ethereum> + Clone),
     compliance_definition_addr: Address,
-    merkle_root: FixedBytes<32>,
+    merkle_root1: FixedBytes<32>,
+    merkle_root2: FixedBytes<32>,
     leaves_hash: String,
 ) -> Result<FixedBytes<32>> {
     let contract = ComplianceDefinition::new(compliance_definition_addr, provider);
 
     let pending_tx = contract
-        .updateParams(merkle_root, leaves_hash)
+        .updateParams(merkle_root1, leaves_hash)
         .send()
         .await
         .context("failed to broadcast updateParams transaction")?;

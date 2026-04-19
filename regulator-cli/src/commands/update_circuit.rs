@@ -21,7 +21,8 @@ pub struct UpdateCircuitData {
     pub verifier_path: String,
     pub cid: String,
     pub ipfs_size: String,
-    pub merkle_root: String,
+    pub merkle_root_1: String,
+    pub merkle_root_2: String,
     pub verifier_address: String,
     pub deploy_tx_hash: String,
     pub compliance_definition: String,
@@ -39,7 +40,8 @@ pub async fn run(
     private_key: &str,
     compliance_definition: &str,
     contract_dir: &Path,
-    merkle_root: &str,
+    merkle_root_1: &str,
+    merkle_root_2: &str,
     t_start: &str,
     t_end: &str,
     leaves_file: Option<PathBuf>,
@@ -155,9 +157,12 @@ pub async fn run(
     let cd_addr: Address = compliance_definition
         .parse()
         .with_context(|| format!("invalid compliance definition address: {compliance_definition}"))?;
-    let merkle_root_bytes: FixedBytes<32> = merkle_root
+    let merkle_root_1_bytes: FixedBytes<32> = merkle_root_1
         .parse()
-        .with_context(|| format!("invalid merkle_root (expected bytes32): {merkle_root}"))?;
+        .with_context(|| format!("invalid merkle_root (expected bytes32): {merkle_root_1}"))?;
+    let merkle_root_2_bytes: FixedBytes<32> = merkle_root_2
+        .parse()
+        .with_context(|| format!("invalid merkle_root (expected bytes32): {merkle_root_2}"))?;
     let t_start_val: U256 = t_start
         .parse()
         .with_context(|| format!("invalid t_start (expected uint256): {t_start}"))?;
@@ -170,7 +175,8 @@ pub async fn run(
         &provider,
         cd_addr,
         deploy_result.deployed_to,
-        merkle_root_bytes,
+        merkle_root_1_bytes,
+        merkle_root_2_bytes,
         t_start_val,
         t_end_val,
         cid.to_string(),
@@ -183,7 +189,8 @@ pub async fn run(
     println!("deploy_tx_hash={}", deploy_result.transaction_hash);
     println!("update_tx_hash={update_tx_hash}");
     println!("cid={cid}");
-    println!("merkle_root={merkle_root}");
+    println!("merkle_root={merkle_root_1}");
+    println!("merkle_root={merkle_root_2}");
     println!("chain_id={chain_id}");
     println!("verification={verification}");
 
@@ -194,7 +201,8 @@ pub async fn run(
         verifier_path: verifier_path.display().to_string(),
         cid: cid.to_string(),
         ipfs_size: response.size,
-        merkle_root: merkle_root.to_string(),
+        merkle_root_1: merkle_root_1.to_string(),
+        merkle_root_2: merkle_root_2.to_string(),
         verifier_address: deploy_result.deployed_to.to_string(),
         deploy_tx_hash: deploy_result.transaction_hash.to_string(),
         compliance_definition: compliance_definition.to_string(),

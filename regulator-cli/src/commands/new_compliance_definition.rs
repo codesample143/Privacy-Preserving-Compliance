@@ -26,7 +26,8 @@ pub struct NewComplianceDefinitionData {
     pub source_file: String,
     pub cid: String,
     pub ipfs_size: String,
-    pub merkle_root: String,
+    pub merkle_root_1: String,
+    pub merkle_root_2: String,
     pub verifier_address: String,
     pub verifier_tx: String,
     pub verifier_verification: String,
@@ -44,7 +45,8 @@ pub async fn run(
     private_key: &str,
     regulator: &str,
     contract_dir: &Path,
-    merkle_root: &str,
+    merkle_root_1: &str,
+    merkle_root_2: &str,
     t_start: &str,
     t_end: &str,
     leaves_file: Option<PathBuf>,
@@ -190,9 +192,13 @@ pub async fn run(
     eprintln!("\nCompliance Registration");
     let cid = &ipfs_response.hash;
     let cd_addr = cd_result.deployed_to;
-    let merkle_root_bytes: FixedBytes<32> = merkle_root
+    let merkle_root_1_bytes: FixedBytes<32> = merkle_root_1
         .parse()
-        .with_context(|| format!("invalid merkle_root (expected bytes32): {merkle_root}"))?;
+        .with_context(|| format!("invalid merkle_root (expected bytes32): {merkle_root_1}"))?;
+    let merkle_root_2_bytes: FixedBytes<32> = merkle_root_2
+        .parse()
+        .with_context(|| format!("invalid merkle_root (expected bytes32): {merkle_root_2}"))?;
+
     let t_start_val: U256 = t_start
         .parse()
         .with_context(|| format!("invalid t_start (expected uint256): {t_start}"))?;
@@ -205,7 +211,8 @@ pub async fn run(
         &provider,
         cd_addr,
         verifier_result.deployed_to,
-        merkle_root_bytes,
+        merkle_root_1_bytes,
+        merkle_root_2_bytes,
         t_start_val,
         t_end_val,
         cid.to_string(),
@@ -219,7 +226,8 @@ pub async fn run(
     println!("compliance_definition={cd_addr}");
     println!("verifier_address={}", verifier_result.deployed_to);
     println!("cid={cid}");
-    println!("merkle_root={merkle_root}");
+    println!("merkle_root_1={merkle_root_1}");
+    println!("merkle_root_2={merkle_root_2}");
     println!("chain_id={chain_id}");
 
     let data = NewComplianceDefinitionData {
@@ -233,7 +241,8 @@ pub async fn run(
         source_file: source_file.display().to_string(),
         cid: cid.to_string(),
         ipfs_size: ipfs_response.size.clone(),
-        merkle_root: merkle_root.to_string(),
+        merkle_root_1: merkle_root_1.to_string(),
+        merkle_root_2: merkle_root_2.to_string(),
         verifier_address: verifier_result.deployed_to.to_string(),
         verifier_tx: verifier_result.transaction_hash.to_string(),
         verifier_verification: verifier_verification.to_string(),

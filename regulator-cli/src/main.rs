@@ -73,7 +73,8 @@ enum Commands {
 
         /// Merkle root of the compliance membership set (bytes32)
         #[arg(long, default_value = BYTES32_ZERO)]
-        merkle_root: String,
+        merkle_root_1: String,
+        merkle_root_2: String,
 
         /// Block height when this version becomes active
         #[arg(long, default_value = "0")]
@@ -115,7 +116,8 @@ enum Commands {
 
         /// Merkle root of the compliance membership set (bytes32)
         #[arg(long, default_value = BYTES32_ZERO)]
-        merkle_root: String,
+        merkle_root_1: String,
+        merkle_root_2: String,
 
         /// Block height when this version becomes active
         #[arg(long, default_value = "0")]
@@ -145,7 +147,8 @@ enum Commands {
 
         /// New Merkle root of the public parameter set (bytes32)
         #[arg(long)]
-        merkle_root: String,
+        merkle_root_1: String,
+        merkle_root_2: String,
 
         /// JSON file containing the new merkle tree leaves to upload to IPFS
         #[arg(long, value_name = "FILE")]
@@ -185,7 +188,8 @@ async fn main() -> Result<()> {
             regulator,
             contract_dir,
             verifier_output,
-            merkle_root,
+            merkle_root_1,
+            merkle_root_2,
             t_start,
             t_end,
             leaves_file,
@@ -199,7 +203,8 @@ async fn main() -> Result<()> {
                 &private_key,
                 &regulator,
                 &contract_dir,
-                &merkle_root,
+                &merkle_root_1,
+                &merkle_root_2,
                 &t_start,
                 &t_end,
                 leaves_file,
@@ -215,7 +220,8 @@ async fn main() -> Result<()> {
             compliance_definition,
             verifier_output,
             contract_dir,
-            merkle_root,
+            merkle_root_1,
+            merkle_root_2,
             t_start,
             t_end,
             leaves_file,
@@ -228,7 +234,8 @@ async fn main() -> Result<()> {
                 &private_key,
                 &compliance_definition,
                 &contract_dir,
-                &merkle_root,
+                &merkle_root_1,
+                &merkle_root_2,
                 &t_start,
                 &t_end,
                 leaves_file,
@@ -241,7 +248,8 @@ async fn main() -> Result<()> {
             compliance_definition,
             rpc_url,
             private_key,
-            merkle_root,
+            merkle_root_1,
+            merkle_root_2,
             leaves_file,
         } => {
             commands::update_params::run(
@@ -249,7 +257,8 @@ async fn main() -> Result<()> {
                 &ipfs_url,
                 &rpc_url,
                 &private_key,
-                &merkle_root,
+                &merkle_root_1,
+                &merkle_root_2,
                 leaves_file,
                 &receipts_dir,
             )

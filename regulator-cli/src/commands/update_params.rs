@@ -10,7 +10,8 @@ use crate::receipt::Receipt;
 #[derive(Debug, Serialize)]
 pub struct UpdateParamsData {
     pub compliance_definition: String,
-    pub merkle_root: String,
+    pub merkle_root1: String,
+    pub merkle_root2: String,
     pub leaves_file: String,
     pub leaves_cid: String,
     pub update_tx_hash: String,
@@ -21,7 +22,8 @@ pub async fn run(
     ipfs_rpc_url: &str,
     rpc_url: &str,
     private_key: &str,
-    merkle_root: &str,
+    merkle_root1: &str,
+    merkle_root2: &str,
     leaves_file: PathBuf,
     receipts_dir: &Path,
 ) -> Result<()> {
@@ -39,30 +41,35 @@ pub async fn run(
     let cd_addr: Address = compliance_definition
         .parse()
         .with_context(|| format!("invalid compliance definition address: {compliance_definition}"))?;
-    let merkle_root_bytes: FixedBytes<32> = merkle_root
+    let merkle_root1_bytes: FixedBytes<32> = merkle_root1
         .parse()
-        .with_context(|| format!("invalid merkle_root (expected bytes32): {merkle_root}"))?;
-
+        .with_context(|| format!("invalid merkle_root (expected bytes32): {merkle_root1}"))?;
+    let merkle_root2_bytes: FixedBytes<32> = merkle_root2
+        .parse()
+        .with_context(|| format!("invalid merkle_root (expected bytes32): {merkle_root2}"))?;
     let provider = eth::create_provider(rpc_url, private_key)?;
 
     eprintln!("calling updateParams...");
     let update_tx_hash = eth::call_update_params(
         &provider,
         cd_addr,
-        merkle_root_bytes,
+        merkle_root1_bytes,
+        merkle_root2_bytes,
         leaves_cid.to_string(),
     )
     .await?;
     eprintln!("updateParams succeeded");
 
     println!("compliance_definition={compliance_definition}");
-    println!("merkle_root={merkle_root}");
+    println!("merkle_root={merkle_root1}");
+    println!("merkle_root={merkle_root2}");
     println!("leaves_cid={leaves_cid}");
     println!("update_tx_hash={update_tx_hash}");
 
     let data = UpdateParamsData {
         compliance_definition: compliance_definition.to_string(),
-        merkle_root: merkle_root.to_string(),
+        merkle_root1: merkle_root1.to_string(),
+        merkle_root2: merkle_root2.to_string(),
         leaves_file: leaves_file.display().to_string(),
         leaves_cid: leaves_cid.to_string(),
         update_tx_hash: update_tx_hash.to_string(),
