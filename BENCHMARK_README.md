@@ -1,16 +1,21 @@
 # Benchmark Suite
 
-Benchmarks proof generation times for Noir circuits. Measures witness generation and proof generation separately, producing timestamped JSON results.
+Benchmarks proof generation times for Noir circuits using two benchmark applications that share the same core logic:
 
-Located in `packages/benchmark/`.
+- **Server-side** (`packages/benchmark-native/`) — CLI tool using Barretenberg's native binary backend
+- **Client-side** (`packages/benchmark-browser/`) — Browser app using Barretenberg's WASM backend
+
+Both measure the same phases (witness generation, proof generation) with identical circuit inputs. The only variable is the Barretenberg execution mode, isolating the performance impact of the runtime environment from the circuit complexity itself.
 
 ## Prerequisites
 
 - Node.js >= 20
 - `nargo` installed and on PATH (matching the project's Noir version)
-- `pnpm install` run at the project root
+- `pnpm install` and `pnpm build` run at the project root
 
-## Usage
+## Server-side Benchmark (Native)
+
+Uses Barretenberg's native binary backend. Represents the fastest possible proving on a given machine — relevant for server-side proof generation.
 
 ```
 pnpm bench -- --circuit <name> --runs <N> [--leaves <count>] [--skip-compile]
@@ -36,6 +41,23 @@ pnpm bench -- --circuit non_membership --runs 3 --leaves 100
 pnpm bench -- --circuit membership --runs 10 --skip-compile
 ```
 
+Results are written to `benchmark-data/` at the project root (gitignored).
+
+## Client-side Benchmark (Browser WASM)
+
+Uses Barretenberg's WASM backend in a real browser environment. Captures the proving latency that end users actually experience, including Web Worker threading, browser memory constraints, and WASM bootstrap costs.
+
+```bash
+# Compile circuits first (browser can't run nargo)
+cd circuits/membership && nargo compile
+cd circuits/non_membership && nargo compile
+
+# Start the benchmark app
+pnpm dev:bench
+```
+
+Open `http://localhost:5173` in the browser. Select a circuit, configure runs and leaves, and click "Start Benchmark." Results display in real-time and can be downloaded as JSON.
+
 ## What It Measures
 
 Each benchmark run captures three timings:
@@ -44,28 +66,26 @@ Each benchmark run captures three timings:
 - **Proof generation** — running the Barretenberg cryptographic prover (`backend.generateProof()`) to produce an UltraHonk proof
 - **Total** — wall-clock time for both phases combined
 
-**Barretenberg init time** is recorded separately. This is the one-time cost of booting the WASM runtime, measured outside the benchmark loop.
+**Barretenberg init time** is recorded separately. This is the one-time cost of booting the proving runtime, measured outside the benchmark loop. It is negligible for the native backend but significant for WASM.
 
-### WASM backend
+### Backend selection
 
-The benchmark forces Barretenberg's **WASM backend** (`BackendType.Wasm`) rather than the native binary backend that `@aztec/bb.js` defaults to in Node.js. This is intentional — the end application runs in the browser where Barretenberg executes as WASM, so using the native backend would produce misleadingly fast results. The WASM backend in Node.js provides a closer approximation of browser proving performance since both environments execute the same WASM bytecode.
+`Barretenberg.new()` auto-detects the environment:
+- In Node.js: selects the **native binary backend** (NativeUnixSocket)
+- In the browser: selects the **WASM backend** (WasmWorker)
+
+Both benchmark apps call `Barretenberg.new()` with no options — the environment determines the backend automatically. The shared benchmark runner (`runBenchmark`) accepts a pre-initialized `Barretenberg` API instance and is agnostic to which backend is behind it.
 
 ## Output
 
-Results are written to `benchmark-data/` at the project root (gitignored). Each run produces a timestamped JSON file:
-
-```
-benchmark-data/membership-2026-03-18T2146.json
-```
-
-### Output schema
+Both benchmarks produce the same JSON schema:
 
 ```json
 {
   "circuit": "membership",
-  "timestamp": "2026-03-18T21:46:03.129Z",
+  "timestamp": "2026-03-25T15:09:00.000Z",
   "config": { "runs": 5, "leaves": 10 },
-  "system": { "platform": "linux", "arch": "x64", "nodeVersion": "v22.11.0" },
+  "system": { "platform": "linux", "arch": "x64", "runtime": "Node.js v22.11.0 (native)" },
   "barretenbergInitMs": 11.4,
   "results": [
     {
@@ -83,9 +103,14 @@ benchmark-data/membership-2026-03-18T2146.json
 }
 ```
 
+The `system.runtime` field distinguishes between `"Node.js v22.11.0 (native)"` and `"Browser (WASM)"`.
+
+- **Server-side:** results are written to `benchmark-data/<circuit>-<timestamp>.json`
+- **Client-side:** results are downloaded via the browser's "Download Results JSON" button
+
 ## Adding a New Circuit Benchmark
 
-To benchmark a new circuit, add an entry to the circuit registry in `packages/benchmark/src/circuits.ts`.
+To benchmark a new circuit, add an entry to the circuit registry in `packages/benchmark-native/src/circuits.ts`.
 
 ### 1. Define the circuit config
 
@@ -128,7 +153,17 @@ export const circuits: Record<string, CircuitConfig> = {
 };
 ```
 
-The circuit is now available via `--circuit my_circuit`.
+The circuit is now available via `--circuit my_circuit` (CLI) and in the browser dropdown.
+
+For the browser benchmark, also add a loader entry in `packages/benchmark-browser/src/main.ts`:
+
+```ts
+const circuitModules: Record<string, () => Promise<CompiledCircuit>> = {
+  // ... existing entries ...
+  my_circuit: () =>
+    import("@circuits/my_circuit/target/my_circuit.json").then((m) => m.default as unknown as CompiledCircuit),
+};
+```
 
 ### Key conventions
 
@@ -136,20 +171,27 @@ The circuit is now available via `--circuit my_circuit`.
 - **Array inputs** (like `hash_path`) are arrays of hex strings
 - **Scalar inputs** (like `index`, `proof_type`) are decimal strings
 - Use SDK utilities (`computeMerkleProof`, `computeMerkleProofForLeaf`) for merkle proof computation
+- SDK might need to be extended to support generating input needed for the proof if it's a new type
 
 ## Architecture
 
 ```
-packages/benchmark/src/
-├── index.ts       CLI entry point, arg parsing, orchestration
+packages/benchmark-native/src/
+├── core.ts        Shared exports (circuits, bench, stats, output)
+├── index.ts       CLI entry point — native Barretenberg
 ├── circuits.ts    Circuit registry (test data + input generation per circuit)
 ├── compile.ts     Runs nargo compile on the circuit's project directory
-├── bench.ts       Benchmark runner (Barretenberg init, witness/proof timing loop)
+├── bench.ts       Benchmark runner (witness/proof timing loop)
 ├── stats.ts       Aggregate statistics (mean, min, max, stddev)
-└── output.ts      JSON result builder and file writer
+└── output.ts      JSON result builder
+
+packages/benchmark-browser/
+├── index.html     Benchmark UI
+├── vite.config.ts Vite config (COEP/COOP headers, circuit alias)
+└── src/main.ts    Browser entry point — WASM Barretenberg
 ```
 
-The benchmark runner initializes Barretenberg once and reuses it across all runs. Each run creates fresh `Noir` and `UltraHonkBackend` instances to avoid state leakage between iterations.
+The shared benchmark runner accepts a pre-initialized `Barretenberg` API instance and is agnostic to the backend. Each entry point initializes Barretenberg, times the init, and passes the API to the shared runner.
 
 ## Future Work
 
@@ -174,13 +216,6 @@ Run benchmarks across multiple leaf counts to produce a performance curve:
 pnpm bench -- --circuit membership --runs 5 --leaves 10,100,1000
 ```
 
-### Browser-based benchmarking
+### Cross-browser benchmarking
 
-The current benchmark runs in Node.js with Barretenberg's WASM backend, which approximates browser performance since both environments execute the same WASM bytecode on V8 (Chrome/Node). However, a true browser benchmark harness would capture additional real-world factors:
-
-- **Threading model** — Node.js `worker_threads` vs browser Web Workers + SharedArrayBuffer have different coordination overhead
-- **Memory constraints** — browsers have tighter WASM memory limits and compete with the DOM for resources
-- **Cross-browser variance** — Firefox (SpiderMonkey) and Safari (JavaScriptCore) have different WASM engines and may show meaningfully different proving times
-- **WASM bootstrap** — the browser requires explicit `initACVM()` / `initNoirC()` calls to initialize Noir's WASM modules, which the Node.js benchmark skips since those auto-initialize in Node
-
-A browser harness could use a minimal Vite page (similar to the existing demos) that runs the proving loop and posts results back. This would give the most accurate picture of end-user proving latency.
+The browser benchmark currently runs on whichever browser the user opens it in. Cross-browser comparison (Chrome, Firefox, Safari) would reveal WASM engine differences, as each browser uses a different JavaScript/WASM engine (V8, SpiderMonkey, JavaScriptCore).

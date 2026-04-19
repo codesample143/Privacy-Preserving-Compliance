@@ -1,9 +1,18 @@
 {
-  "name": "@ppc/benchmark",
+  "name": "@ppc/benchmark-native",
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "dist/core.js",
+  "types": "dist/core.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/core.d.ts",
+      "import": "./dist/core.js"
+    }
+  },
   "scripts": {
+    "build": "tsup",
     "bench": "tsx src/index.ts"
   },
   "dependencies": {
@@ -16,6 +25,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "tsup": "^8.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.5.0"
   }

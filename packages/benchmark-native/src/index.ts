@@ -1,11 +1,13 @@
 import { readFileSync } from "fs";
+import { mkdirSync, writeFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import type { CompiledCircuit } from "@noir-lang/noir_js";
+import { Barretenberg } from "@aztec/bb.js";
 import { circuits } from "./circuits.js";
 import { compileCircuit } from "./compile.js";
-import { runBenchmark } from "./bench.js";
-import { buildOutput, writeResult } from "./output.js";
+import { runBenchmark, type BenchResult } from "./bench.js";
+import { buildOutput, type BenchmarkOutput } from "./output.js";
 import type { Stats } from "./stats.js";
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -32,6 +34,18 @@ function formatMs(ms: number): string {
 
 function formatStats(label: string, stats: Stats): string {
   return `    ${label.padEnd(10)} mean=${formatMs(stats.mean)}  min=${formatMs(stats.min)}  max=${formatMs(stats.max)}  stddev=${formatMs(stats.stddev)}`;
+}
+
+function writeResult(data: BenchmarkOutput, projectRoot: string): string {
+  const dir = resolve(projectRoot, "benchmark-data");
+  mkdirSync(dir, { recursive: true });
+
+  const ts = data.timestamp.replace(/[:.]/g, "").replace("T", "T").slice(0, 15);
+  const filename = `${data.circuit}-${ts}.json`;
+  const filepath = resolve(dir, filename);
+
+  writeFileSync(filepath, JSON.stringify(data, null, 2) + "\n");
+  return filepath;
 }
 
 // ── Arg parsing ──────────────────────────────────────────────────────
@@ -109,11 +123,17 @@ console.log(`Generating test data (${leaves} leaves)...`);
 const { leaves: testLeaves, address } = config.generateTestData(leaves);
 const inputs = config.generateInputs(testLeaves, address);
 
-// Run benchmark
+// Initialize Barretenberg — auto-selects native backend in Node.js
 console.log(`\nBenchmarking: ${circuitName} (${leaves} leaves, ${runs} runs)\n`);
-const { barretenbergInitMs, results } = await runBenchmark(circuit, inputs, runs);
+const initStart = performance.now();
+const api = await Barretenberg.new();
+const barretenbergInitMs = performance.now() - initStart;
 
 console.log(`  Barretenberg init: ${formatMs(barretenbergInitMs)}\n`);
+
+// Run benchmark
+const results = await runBenchmark(api, circuit, inputs, runs);
+await api.destroy();
 
 for (const r of results) {
   console.log(
@@ -122,7 +142,11 @@ for (const r of results) {
 }
 
 // Build output and compute aggregates
-const output = buildOutput(circuitName, runs, leaves, barretenbergInitMs, results);
+const output = buildOutput(circuitName, runs, leaves, barretenbergInitMs, results, {
+  platform: process.platform,
+  arch: process.arch,
+  runtime: `Node.js ${process.version} (native)`,
+});
 
 console.log(`\n  Aggregate (${runs} runs):`);
 console.log(formatStats("Witness:", output.aggregate.witnessGeneration));

@@ -1,6 +1,5 @@
 import { computeMerkleProof, computeMerkleProofForLeaf } from "@ppc/sdk";
 import type { InputMap } from "@noir-lang/noirc_abi";
-import { randomBytes } from "crypto";
 
 export interface CircuitConfig {
   /** Circuit identifier matching the Nargo package name */
@@ -21,7 +20,11 @@ function toHex(value: bigint): string {
 
 /** Generate a random bigint that looks like an Ethereum address (160 bits). */
 function randomAddress(): bigint {
-  return BigInt("0x" + randomBytes(20).toString("hex"));
+  const bytes = new Uint8Array(20);
+  crypto.getRandomValues(bytes);
+  return BigInt(
+    "0x" + Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(""),
+  );
 }
 
 // ── Membership ────────────────────────────────────────────────────────

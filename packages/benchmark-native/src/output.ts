@@ -1,7 +1,5 @@
-import { mkdirSync, writeFileSync } from "fs";
-import { resolve } from "path";
-import type { BenchResult } from "./bench";
-import { computeStats, type Stats } from "./stats";
+import type { BenchResult } from "./bench.js";
+import { computeStats, type Stats } from "./stats.js";
 
 export interface BenchmarkOutput {
   circuit: string;
@@ -13,7 +11,7 @@ export interface BenchmarkOutput {
   system: {
     platform: string;
     arch: string;
-    nodeVersion: string;
+    runtime: string;
   };
   barretenbergInitMs: number;
   results: BenchResult[];
@@ -30,16 +28,13 @@ export function buildOutput(
   leaves: number,
   barretenbergInitMs: number,
   results: BenchResult[],
+  system: { platform: string; arch: string; runtime: string },
 ): BenchmarkOutput {
   return {
     circuit,
     timestamp: new Date().toISOString(),
     config: { runs, leaves },
-    system: {
-      platform: process.platform,
-      arch: process.arch,
-      nodeVersion: process.version,
-    },
+    system,
     barretenbergInitMs,
     results,
     aggregate: {
@@ -48,16 +43,4 @@ export function buildOutput(
       total: computeStats(results.map((r) => r.totalMs)),
     },
   };
-}
-
-export function writeResult(data: BenchmarkOutput, projectRoot: string): string {
-  const dir = resolve(projectRoot, "benchmark-data");
-  mkdirSync(dir, { recursive: true });
-
-  const ts = data.timestamp.replace(/[:.]/g, "").replace("T", "T").slice(0, 15);
-  const filename = `${data.circuit}-${ts}.json`;
-  const filepath = resolve(dir, filename);
-
-  writeFileSync(filepath, JSON.stringify(data, null, 2) + "\n");
-  return filepath;
 }
