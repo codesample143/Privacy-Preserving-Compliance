@@ -156,7 +156,7 @@ $btn.addEventListener("click", async () => {
         const upperProof = computeMerkleProof(leaves, 0);
 
         return {
-          root: ctx.definition.merkleRoot,
+          root: ctx.definition.merkleRoot1,
           address: userAddr,
           lower_leaf: toHex(0n),
           upper_leaf: toHex(leaves[0]),
@@ -179,7 +179,7 @@ $btn.addEventListener("click", async () => {
         const emptyProof = computeMerkleProof(leavesWithEmpty, leaves.length);
 
         return {
-          root: ctx.definition.merkleRoot,
+          root: ctx.definition.merkleRoot1,
           address: userAddr,
           lower_leaf: toHex(leaves[lastIdx]),
           upper_leaf: toHex(0n),
@@ -200,7 +200,7 @@ $btn.addEventListener("click", async () => {
         const upperProof = computeMerkleProof(leaves, upperIdx);
 
         return {
-          root: ctx.definition.merkleRoot,
+          root: ctx.definition.merkleRoot1,
           address: userAddr,
           lower_leaf: toHex(leaves[lowerIdx]),
           upper_leaf: toHex(leaves[upperIdx]),

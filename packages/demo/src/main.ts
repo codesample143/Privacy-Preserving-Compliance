@@ -162,7 +162,7 @@ function createNonMembershipFormatter(
       const upperProof = computeMerkleProof(leaves, 0);
       return {
         address: userAddr,
-        root: ctx.definition.merkleRoot,
+        root: ctx.definition.merkleRoot1,
         lower_leaf: toHex(0n),
         upper_leaf: toHex(leaves[0]),
         lower_index: "0",
@@ -178,7 +178,7 @@ function createNonMembershipFormatter(
       const emptyProof = computeMerkleProof(leavesWithEmpty, leaves.length);
       return {
         address: userAddr,
-        root: ctx.definition.merkleRoot,
+        root: ctx.definition.merkleRoot1,
         lower_leaf: toHex(leaves[lastIdx]),
         upper_leaf: toHex(0n),
         lower_index: lowerProof.index,
@@ -194,7 +194,7 @@ function createNonMembershipFormatter(
       const upperProof = computeMerkleProof(leaves, upperIdx);
       return {
         address: userAddr,
-        root: ctx.definition.merkleRoot,
+        root: ctx.definition.merkleRoot1,
         lower_leaf: toHex(leaves[lowerIdx]),
         upper_leaf: toHex(leaves[upperIdx]),
         lower_index: lowerProof.index,
@@ -221,7 +221,7 @@ function createMembershipFormatter(
 
     return {
       address: userAddr,
-      root: ctx.definition.merkleRoot,
+      root: ctx.definition.merkleRoot1,
       index: proof.index,
       hash_path: proof.hashPath,
     };

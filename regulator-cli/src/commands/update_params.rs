@@ -53,8 +53,14 @@ pub async fn run(
     let update_tx_hash = eth::call_update_params(
         &provider,
         cd_addr,
+<<<<<<< HEAD
         merkle_root1_bytes,
         merkle_root2_bytes,
+=======
+        merkle_root_bytes,
+        merkle_root_bytes,
+        leaves_cid.to_string(),
+>>>>>>> b95ae85 (Integrate dual Merkle roots and leaves into SDK and demo)
         leaves_cid.to_string(),
     )
     .await?;

@@ -29,11 +29,13 @@ export async function getActiveVersion(
 
   return {
     verifier: result.verifier,
-    merkleRoot: result.merkleRoot,
+    merkleRoot1: result.merkleRoot1,
+    merkleRoot2: result.merkleRoot2,
     tStart: result.tStart,
     tEnd: result.tEnd,
     metadataHash: result.metadataHash,
     leavesHash: result.leavesHash,
+    leavesHashB: result.leavesHashB,
   };
 }
 

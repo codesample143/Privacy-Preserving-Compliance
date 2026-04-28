@@ -13,11 +13,13 @@ export interface ProofManagerConfig {
 /** On-chain ComplianceVersion struct */
 export interface ComplianceVersion {
   verifier: `0x${string}`;
-  merkleRoot: `0x${string}`;
+  merkleRoot1: `0x${string}`;
+  merkleRoot2: `0x${string}`;
   tStart: bigint;
   tEnd: bigint;
   metadataHash: string;
   leavesHash: string;
+  leavesHashB: string;
 }
 
 /** Context passed to an InputFormatter so it can fetch data and build circuit inputs */

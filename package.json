@@ -3,6 +3,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "dev:membership": "pnpm --filter @ppc/demo-membership dev",
+    "dev:dual-membership": "pnpm --filter @ppc/demo-dual-membership dev",
     "dev:non-membership": "pnpm --filter @ppc/demo-non-membership dev",
     "dev:demo": "pnpm --filter @ppc/demo dev",
     "bench": "pnpm --filter @ppc/benchmark-native bench",

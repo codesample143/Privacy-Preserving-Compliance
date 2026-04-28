@@ -61,7 +61,7 @@ contract CompliantTokenTest is Test {
 
     function test_mintSucceedsWithValidProof() public {
         vm.prank(regulator);
-        cd.updateCircuit(address(passVerifier), bytes32(0), 0, type(uint256).max, "", "");
+        cd.updateCircuit(address(passVerifier), bytes32(0), bytes32(0), 0, type(uint256).max, "", "", "");
 
         vm.prank(user);
         token.mint(hex"");
@@ -72,7 +72,7 @@ contract CompliantTokenTest is Test {
 
     function test_mintRevertsWithInvalidProof() public {
         vm.prank(regulator);
-        cd.updateCircuit(address(failVerifier), bytes32(0), 0, type(uint256).max, "", "");
+        cd.updateCircuit(address(failVerifier), bytes32(0), bytes32(0), 0, type(uint256).max, "", "", "");
 
         vm.prank(user);
         vm.expectRevert(CompliantToken.ComplianceCheckFailed.selector);
@@ -87,7 +87,7 @@ contract CompliantTokenTest is Test {
 
     function test_mintIncrementsCumulatively() public {
         vm.prank(regulator);
-        cd.updateCircuit(address(passVerifier), bytes32(0), 0, type(uint256).max, "", "");
+        cd.updateCircuit(address(passVerifier), bytes32(0), bytes32(0), 0, type(uint256).max, "", "", "");
 
         vm.startPrank(user);
         token.mint(hex"");
@@ -100,7 +100,7 @@ contract CompliantTokenTest is Test {
 
     function test_mintEmitsTransferEvent() public {
         vm.prank(regulator);
-        cd.updateCircuit(address(passVerifier), bytes32(0), 0, type(uint256).max, "", "");
+        cd.updateCircuit(address(passVerifier), bytes32(0), bytes32(0), 0, type(uint256).max, "", "", "");
 
         vm.expectEmit(true, true, false, true);
         emit CompliantToken.Transfer(address(0), user, 1e18);
@@ -113,7 +113,7 @@ contract CompliantTokenTest is Test {
 
     function test_transferMovesTokens() public {
         vm.prank(regulator);
-        cd.updateCircuit(address(passVerifier), bytes32(0), 0, type(uint256).max, "", "");
+        cd.updateCircuit(address(passVerifier), bytes32(0), bytes32(0), 0, type(uint256).max, "", "", "");
 
         vm.prank(user);
         token.mint(hex"");
@@ -132,7 +132,7 @@ contract CompliantTokenTest is Test {
 
     function test_approveAndTransferFrom() public {
         vm.prank(regulator);
-        cd.updateCircuit(address(passVerifier), bytes32(0), 0, type(uint256).max, "", "");
+        cd.updateCircuit(address(passVerifier), bytes32(0), bytes32(0), 0, type(uint256).max, "", "", "");
 
         vm.prank(user);
         token.mint(hex"");

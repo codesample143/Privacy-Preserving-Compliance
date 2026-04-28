@@ -126,26 +126,40 @@ $btn.addEventListener("click", async () => {
       return;
     }
 
-    // Membership-specific input formatter:
-    // fetches leaves, computes a merkle inclusion proof, and maps
-    // the result onto the circuit's expected inputs.
-    const membershipFormatter: InputFormatter = async (ctx) => {
+    // Dual-membership: two leaf sets from IPFS, same address in both trees;
+    // `circuits/dual_membership` uses one `hash_path` witness for both roots (see main.nr).
+    const dualMembershipFormatter: InputFormatter = async (ctx) => {
       setStatus("Fetching merkle leaves from IPFS...");
-      const leaves = await ctx.proofManager.fetchLeaves(ctx.definition.leavesHash);
+      const [leavesA, leavesB] = await Promise.all([
+        ctx.proofManager.fetchLeaves(ctx.definition.leavesHash),
+        ctx.proofManager.fetchLeaves(ctx.definition.leavesHashB),
+      ]);
 
-      setStatus("Computing merkle proof...");
-      const proof = computeMerkleProofForLeaf(leaves, BigInt(userAddr));
+      setStatus("Computing merkle proofs...");
+      const leaf = BigInt(userAddr);
+      const proofA = computeMerkleProofForLeaf(leavesA, leaf);
+      const proofB = computeMerkleProofForLeaf(leavesB, leaf);
+
+      for (let i = 0; i < proofA.hashPath.length; i++) {
+        if (proofA.hashPath[i] !== proofB.hashPath[i]) {
+          throw new Error(
+            "Both trees must use the same sibling path for this circuit (e.g. pin the same leaves JSON for leavesHash and leavesHashB, or matching sparse layouts).",
+          );
+        }
+      }
 
       return {
         address: userAddr,
-        root: ctx.definition.merkleRoot1,
-        index: proof.index,
-        hash_path: proof.hashPath,
+        index1: proofA.index,
+        index2: proofB.index,
+        hash_path: proofA.hashPath,
+        root1: ctx.definition.merkleRoot1,
+        root2: ctx.definition.merkleRoot2,
       };
     };
 
     setStatus("Generating proof... (this may take 30-60 seconds)");
-    const result = await pm.generateComplianceProof(contractAddr, membershipFormatter);
+    const result = await pm.generateComplianceProof(contractAddr, dualMembershipFormatter);
 
     $proof.value = result.proof;
     $publicInputs.value = result.publicInputs.join("\n");

@@ -211,11 +211,17 @@ pub async fn run(
         &provider,
         cd_addr,
         verifier_result.deployed_to,
+<<<<<<< HEAD
         merkle_root_1_bytes,
         merkle_root_2_bytes,
+=======
+        merkle_root_bytes,
+        merkle_root_bytes,
+>>>>>>> b95ae85 (Integrate dual Merkle roots and leaves into SDK and demo)
         t_start_val,
         t_end_val,
         cid.to_string(),
+        leaves_cid.clone(),
         leaves_cid.clone(),
     )
     .await?;
