@@ -384,7 +384,6 @@ $connectBtn.addEventListener("click", async () => {
 
     // Update all panels with the wallet address and enable proof buttons
     for (const panel of panels) {
-      $(panel.id, "userAddr").textContent = walletAddress;
       $btn(panel.id, "proofBtn").disabled = false;
     }
   } catch (err) {

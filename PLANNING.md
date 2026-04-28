@@ -159,6 +159,11 @@ Still required, but we should focus on the MVP first
 - [ ] structuring constraint
 - [ ] Valid ZK passport constraint
 
+#### Non-membership proof Noir optimization 
+- [ ] Explore using an indexed Merkle tree instead of the ordered Merkle tree for non-membership proofs.
+- [ ] Benchmark the proof generation speedup/slowdown
+- [ ] Benchmark the client-side tree generation speedup/slowdown (for when the regulator has to add an address or multiple to the sanction list)
+
 #### Proof aggregation (constraints)
 - [ ] Modify verifier contract to aggregate and verify multiple proofs
 - [ ] Example compliance definition that requires multiple constraints
@@ -212,6 +217,11 @@ Still required, but we should focus on the MVP first
 - **Off-chain Computation**: Prove invariants instead of executing on-chain
 - **Credential Systems**: Prove eligibility without revealing attributes
 - **Supply Chain**: B2B privacy on public chains
+
+#### Compliance Definition Index
+- [ ] Add required events to ComplianceDefinition contract
+- [ ] Indexer that scans entire chains for all events related to ComplianceDefinition contracts (ex: new compliance definition published, update, proof submitted, etc)
+- [ ] Frontend to display all active compliance definitions and other information.  This frontend could also fetch relevant information for each compliance definition like the circuit its using or public inputs from IPFS
 
 
 
